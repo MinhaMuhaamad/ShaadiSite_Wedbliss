@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, DollarSign, LayoutGrid, MessageCircle, Store, User, Users, WalletCards, CheckSquare, Heart } from 'lucide-react';
+import { Calendar, DollarSign, LayoutGrid, MessageCircle, Store, User, Users, WalletCards, CheckSquare, Heart, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -10,6 +10,12 @@ const menuItems = [
   { href: '/dashboard', icon: LayoutGrid, label: 'Wedding Dashboard' },
   { href: '/dashboard/profile', icon: User, label: 'My Profile' },
   { href: '/dashboard/weddings', icon: Calendar, label: 'Wedding Setup' },
+  { href: '/dashboard/my-events', icon: Calendar, label: 'My Events' },
+  { href: '/dashboard/checklist', icon: CheckSquare, label: 'Checklist' },
+  { href: '/dashboard/calendar', icon: Calendar, label: 'Planner Calendar' },
+  { href: '/dashboard/invitation-studio', icon: Mail, label: 'Invitation Studio' },
+  { href: '/dashboard/invitation-studio/editor', icon: Mail, label: 'Invitation Editor' },
+  { href: '/dashboard/invitation-studio/send', icon: Mail, label: 'Send Invitations' },
   { href: '/dashboard/guests', icon: Users, label: 'Guest Management' },
   { href: '/dashboard/guests/add', icon: Users, label: 'Add / Edit Guest' },
   { href: '/dashboard/guests/rsvp', icon: CheckSquare, label: 'RSVP Tracker' },

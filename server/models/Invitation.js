@@ -9,8 +9,33 @@ const invitationSchema = new mongoose.Schema({
   guestId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Guest',
-    required: true
+    required: false
   },
+  guestEmail: String,
+  guestName: String,
+  message: String,
+  invitedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'accepted', 'declined'],
+    default: 'pending'
+  },
+  viewedDate: Date,
+  respondedDate: Date,
+  reminderSentDate: Date,
+  reminderCount: {
+    type: Number,
+    default: 0
+  },
+  numberOfGuests: {
+    type: Number,
+    default: 1
+  },
+  dietaryRestrictions: [String],
+  specialRequests: String,
   customMessage: String,
   template: {
     type: String,
