@@ -1,132 +1,144 @@
 'use client';
 
-import { useAuth } from '@/lib/context/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Heart, Users, DollarSign, Calendar } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock3, DollarSign, Heart, Plus, Users } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Welcome back, {user?.name}!
-        </h1>
-        <p className="text-muted-foreground">Here&apos;s your wedding planning hub</p>
+    <div className="space-y-6">
+      <Card className="overflow-hidden border-fuchsia-100 bg-gradient-to-r from-violet-300 to-fuchsia-500 text-white">
+        <CardContent className="p-7">
+          <p className="text-sm text-white/80">Welcome back</p>
+          <h1 className="mt-1 text-4xl font-bold">124 Days to Say "I Do"</h1>
+          <div className="mt-5 flex gap-8">
+            {[
+              { label: 'DAYS', value: '124' },
+              { label: 'TASKS', value: '18' },
+              { label: 'VENDORS', value: '42' }
+            ].map((item) => (
+              <div key={item.label}>
+                <p className="text-3xl font-semibold">{item.value}</p>
+                <p className="text-xs tracking-widest text-white/75">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+        <Card className="border-fuchsia-100 bg-white/90">
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle>Next Task</CardTitle>
+            <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-semibold text-fuchsia-700">DUE TODAY</span>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold">Final Cake Tasting</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Confirm flavor combinations with "Delite Bakery" and finalize table design by 5:30 pm.
+            </p>
+            <div className="mt-5 flex gap-3">
+              <Button variant="outline">View Details</Button>
+              <Button>Mark as Complete</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-fuchsia-100 bg-white/90">
+          <CardHeader>
+            <CardTitle>Budget Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-[12px] border-fuchsia-500 text-center">
+              <div>
+                <p className="text-3xl font-bold">$42,500</p>
+                <p className="text-xs text-muted-foreground">allocated</p>
+              </div>
+            </div>
+            <div className="mt-4 h-2 rounded-full bg-fuchsia-100">
+              <div className="h-2 w-[72%] rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500" />
+            </div>
+            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+              <span>spent $30,500</span>
+              <span>remaining $12,000</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Link href="/dashboard/weddings/new">
-          <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
-            <Heart className="w-6 h-6 text-primary" />
-            <span>New Wedding</span>
-          </Button>
-        </Link>
-        <Link href="/dashboard/guests">
-          <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
-            <Users className="w-6 h-6 text-primary" />
-            <span>Guests</span>
-          </Button>
-        </Link>
-        <Link href="/dashboard/budget">
-          <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
-            <DollarSign className="w-6 h-6 text-primary" />
-            <span>Budget</span>
-          </Button>
-        </Link>
-        <Link href="/dashboard/timeline">
-          <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
-            <Calendar className="w-6 h-6 text-primary" />
-            <span>Timeline</span>
-          </Button>
-        </Link>
+      <div className="grid gap-4 md:grid-cols-3">
+        {quickStats.map((item) => (
+          <Card key={item.label} className="border-fuchsia-100 bg-white/85">
+            <CardContent className="flex items-center gap-3 p-4">
+              <span className="rounded-xl bg-fuchsia-100 p-2 text-fuchsia-700">
+                <item.icon className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-2xl font-bold">{item.value}</p>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Getting Started</CardTitle>
-              <CardDescription>Complete these steps to get your wedding planned</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
-                  <Heart className="w-4 h-4 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">Create your wedding</h3>
-                  <p className="text-sm text-muted-foreground">Set your wedding date, venue, and theme</p>
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <Card className="border-fuchsia-100 bg-white/90">
+          <CardHeader>
+            <CardTitle>Activity Stream</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {activities.map((activity) => (
+              <div key={activity.title} className="flex items-start gap-3 rounded-xl border border-fuchsia-100 bg-fuchsia-50/50 p-3">
+                <span className="mt-0.5 rounded-full bg-white p-1.5 text-fuchsia-600 shadow">
+                  <activity.icon className="h-3.5 w-3.5" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold">{activity.title}</p>
+                  <p className="text-xs text-muted-foreground">{activity.description}</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">Add guests</h3>
-                  <p className="text-sm text-muted-foreground">Create your guest list and send invitations</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1">
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">Set your budget</h3>
-                  <p className="text-sm text-muted-foreground">Allocate funds and track expenses</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">Create timeline</h3>
-                  <p className="text-sm text-muted-foreground">Plan your wedding day hour by hour</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            ))}
+          </CardContent>
+        </Card>
 
-        {/* Stats */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Your Weddings</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">0</div>
-              <p className="text-sm text-muted-foreground">weddings planned</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Guest Count</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">0</div>
-              <p className="text-sm text-muted-foreground">invited guests</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Budget Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">$0</div>
-              <p className="text-sm text-muted-foreground">total allocated</p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="border-fuchsia-100 bg-gradient-to-br from-fuchsia-50 to-white">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link href="/dashboard/weddings/new"><Button className="w-full justify-start gap-2"><Plus className="h-4 w-4" /> New Wedding</Button></Link>
+            <Link href="/dashboard/guests"><Button variant="outline" className="w-full justify-start gap-2"><Users className="h-4 w-4" /> Guests</Button></Link>
+            <Link href="/dashboard/budget"><Button variant="outline" className="w-full justify-start gap-2"><DollarSign className="h-4 w-4" /> Budget</Button></Link>
+            <Link href="/dashboard/timeline"><Button variant="outline" className="w-full justify-start gap-2"><Calendar className="h-4 w-4" /> Timeline</Button></Link>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
+
+const quickStats = [
+  { label: 'Tasks Completed', value: '142 / 180', icon: CheckCircle2 },
+  { label: 'Vendors Booked', value: '12 / 15', icon: Heart },
+  { label: 'Days Remaining', value: '28', icon: Clock3 }
+];
+
+const activities = [
+  {
+    title: 'David marked "Guest List" as 100% complete.',
+    description: '2h ago by David',
+    icon: CheckCircle2
+  },
+  {
+    title: 'New RSVP received from "The Miller Family".',
+    description: '3h ago by RSVP System',
+    icon: Users
+  },
+  {
+    title: 'Vendor "Enchanted Florals" uploaded a new contract.',
+    description: 'Yesterday at 6:20 PM',
+    icon: DollarSign
+  }
+];

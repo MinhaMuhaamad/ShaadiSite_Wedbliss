@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from '@/lib/context/AuthContext'
+import SiteFooter from '@/components/shared/SiteFooter'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -39,7 +40,10 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className="font-sans antialiased bg-background text-foreground">
         <AuthProvider>
-          {children}
+          <div className="min-h-screen bg-background">
+            {children}
+            <SiteFooter />
+          </div>
           {process.env.NODE_ENV === 'production' && <Analytics />}
         </AuthProvider>
       </body>

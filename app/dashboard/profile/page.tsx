@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/context/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { AlertCircle } from 'lucide-react';
+import { Bell, Camera, CheckCircle2, Circle, Heart } from 'lucide-react';
 
 interface UserProfile {
   _id: string;
@@ -32,16 +30,10 @@ export default function ProfilePage() {
   const { user, token } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
-    bio: '',
     wedding_date: '',
-    venue: '',
-    guest_count: ''
+    venue: ''
   });
 
   useEffect(() => {
@@ -60,58 +52,11 @@ export default function ProfilePage() {
       setProfile(data);
       setFormData({
         name: data.name,
-        phone: data.profile?.phone || '',
-        bio: data.profile?.bio || '',
         wedding_date: data.profile?.wedding_date || '',
-        venue: data.profile?.venue || '',
-        guest_count: data.profile?.guest_count?.toString() || ''
+        venue: data.profile?.venue || ''
       });
-    } catch (err) {
-      setError('Failed to load profile');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const response = await fetch('http://localhost:5000/api/users/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          phone: formData.phone,
-          bio: formData.bio,
-          wedding_date: formData.wedding_date || null,
-          venue: formData.venue,
-          guest_count: formData.guest_count ? parseInt(formData.guest_count) : null
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to update profile');
-
-      const data = await response.json();
-      setProfile(data.user);
-      setSuccess('Profile updated successfully');
-    } catch (err) {
-      setError('Failed to update profile');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -120,160 +65,124 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h1>
-        <p className="text-muted-foreground">Manage your account information</p>
-      </div>
+    <div className="relative space-y-6">
+      <div className="pointer-events-none absolute -left-20 top-8 h-56 w-56 rounded-full bg-fuchsia-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-20 bottom-8 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl" />
 
-      <div className="space-y-6">
-        {/* Basic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Update your personal details</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="p-3 bg-destructive/10 text-destructive rounded-md flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="p-3 bg-green-50 text-green-700 rounded-md">
-                  {success}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profile?.email}
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Account Type</Label>
-                  <Input
-                    id="role"
-                    type="text"
-                    value={profile?.role.charAt(0).toUpperCase() + profile?.role.slice(1)}
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  name="bio"
-                  placeholder="Tell us about yourself..."
-                  value={formData.bio}
-                  onChange={handleChange}
-                  className="min-h-24"
+      <div className="grid gap-6 lg:grid-cols-[0.37fr_0.63fr]">
+        <Card className="glass-card border-fuchsia-100">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="relative">
+                <img
+                  src={profile?.profile?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80'}
+                  alt="Profile avatar"
+                  className="h-28 w-28 rounded-full border-4 border-fuchsia-300 object-cover"
                 />
+                <button className="absolute -bottom-1 -right-1 rounded-full bg-white p-2 shadow">
+                  <Camera className="h-4 w-4 text-fuchsia-700" />
+                </button>
               </div>
-
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Wedding Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Wedding Information</CardTitle>
-            <CardDescription>Details about your wedding</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="wedding_date">Wedding Date</Label>
-                  <Input
-                    id="wedding_date"
-                    name="wedding_date"
-                    type="date"
-                    value={formData.wedding_date}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="guest_count">Expected Guest Count</Label>
-                  <Input
-                    id="guest_count"
-                    name="guest_count"
-                    type="number"
-                    value={formData.guest_count}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="venue">Venue</Label>
-                  <Input
-                    id="venue"
-                    name="venue"
-                    placeholder="Wedding venue location"
-                    value={formData.venue}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <Button type="button" onClick={handleSubmit} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Wedding Details'}
-              </Button>
+              <h2 className="mt-4 text-4xl font-bold tracking-tight">{formData.name || user?.name}</h2>
+              <p className="text-sm text-muted-foreground">Elite Member Since Jan 2024</p>
+              <Button className="mt-6 w-full">Edit Profile Info</Button>
+              <Button variant="outline" className="mt-3 w-full">View Public Bio</Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Account Security */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Security</CardTitle>
-            <CardDescription>Manage your security settings</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline">Change Password</Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card className="glass-card border-fuchsia-100">
+            <CardContent className="pt-6">
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <p className="text-sm font-medium text-fuchsia-700">The Big Day</p>
+                  <p className="mt-1 text-2xl font-bold">
+                    {formData.wedding_date ? new Date(formData.wedding_date).toLocaleDateString() : 'Set Date'}
+                  </p>
+                  <p className="mt-3 text-4xl font-bold text-fuchsia-700">142</p>
+                  <p className="text-xs text-muted-foreground">Days Left</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Partner Details</p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=200&q=80" alt="Partner avatar" className="h-10 w-10 rounded-full object-cover" />
+                    <div>
+                      <p className="font-medium">Julian Thorne</p>
+                      <p className="text-xs text-muted-foreground">Groom</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">Contact: {profile?.email}</p>
+                  <p className="text-sm text-muted-foreground">{formData.venue || 'Registry Pref: Bespoke Minimalist'}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card border-fuchsia-100">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Notification Preferences
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2">
+              {['Vendor Updates', 'Budget Alerts', 'Guest Responses', 'Marketing & Style'].map((item, i) => (
+                <div key={item} className="flex items-center justify-between rounded-xl border border-fuchsia-100 bg-white/70 p-3">
+                  <div>
+                  <p className="text-sm font-medium">{item}</p>
+                    <p className="text-xs text-muted-foreground">{i < 2 ? 'Alerts for contract signings & updates' : 'Optional recommendations'}</p>
+                  </div>
+                  <button className={`h-6 w-10 rounded-full p-0.5 ${i < 2 ? 'bg-fuchsia-500' : 'bg-muted'}`}>
+                    <span className={`block h-5 w-5 rounded-full bg-white transition-transform ${i < 2 ? 'translate-x-4' : ''}`} />
+                  </button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card border-fuchsia-100">
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>Planning Timeline</CardTitle>
+              <button className="text-sm font-medium text-fuchsia-700">View All</button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[
+                'Cake Tasting Confirmed',
+                'Budget Milestone'
+              ].map((event, idx) => (
+                <div key={event} className="flex gap-3">
+                  <span className="mt-1 rounded-full bg-fuchsia-100 p-1.5 text-fuchsia-700">
+                    {idx === 0 ? <Heart className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold">{event}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {idx === 0 ? 'Scheduled with "Le Sucre Boutique" for Saturday at 2 PM.' : '50% of total wedding budget allocated.'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      <Card className="glass-card border-fuchsia-100">
+        <CardHeader>
+          <CardTitle>Profile Completeness</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-full border-[10px] border-fuchsia-500">
+            <p className="text-3xl font-bold">75%</p>
+          </div>
+          <div className="mx-auto mt-5 max-w-sm space-y-2">
+            <p className="flex items-center gap-2 text-sm text-muted-foreground"><CheckCircle2 className="h-4 w-4 text-green-600" /> Vendor preferences saved</p>
+            <p className="flex items-center gap-2 text-sm text-muted-foreground"><CheckCircle2 className="h-4 w-4 text-green-600" /> Partner details added</p>
+            <p className="flex items-center gap-2 text-sm text-muted-foreground"><Circle className="h-4 w-4" /> Payment info pending</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

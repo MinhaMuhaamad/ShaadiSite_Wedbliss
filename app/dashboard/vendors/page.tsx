@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Star, MapPin, Phone, Mail, ExternalLink, Heart } from 'lucide-react';
+import { Heart, Mail, MapPin, Phone, Star } from 'lucide-react';
 
 const VENDOR_CATEGORIES = [
   'All Categories',
@@ -128,14 +128,34 @@ export default function VendorsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6 overflow-hidden">
+      <div className="pointer-events-none absolute -left-24 top-10 h-64 w-64 rounded-full bg-fuchsia-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 bottom-8 h-64 w-64 rounded-full bg-violet-400/20 blur-3xl" />
+
       <div>
-        <h1 className="text-3xl font-bold">Vendor Marketplace</h1>
-        <p className="text-muted-foreground mt-1">Browse and book trusted vendors for your wedding</p>
+        <h1 className="text-3xl font-bold">Vendor Profile</h1>
+        <p className="mt-1 text-muted-foreground">Discover and connect with the perfect wedding partners.</p>
       </div>
 
+      <Card className="glass-card surface-3d overflow-hidden border-fuchsia-100">
+        <CardContent className="p-0">
+          <div className="relative h-52">
+            <img
+              src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=1200&q=80"
+              alt="Floral vendor showcase"
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
+            <div className="absolute bottom-5 left-5 text-white">
+              <p className="text-2xl font-bold">Eternal Florals</p>
+              <p className="text-sm text-white/85">Curated premium florist with handcrafted bespoke installations.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Search and Filters */}
-      <Card>
+      <Card className="glass-card border-fuchsia-100">
         <CardContent className="pt-6">
           <div className="space-y-4">
             <Input
@@ -172,29 +192,11 @@ export default function VendorsPage() {
         </CardContent>
       </Card>
 
-      {/* Featured Vendors */}
-      {selectedCategory === 'All Categories' && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Featured Vendors</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {MOCK_VENDORS.filter(v => v.featured).map((vendor) => (
-              <VendorCard
-                key={vendor.id}
-                vendor={vendor}
-                isFavorite={favorites.includes(vendor.id)}
-                onToggleFavorite={toggleFavorite}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Vendor Results */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">
+        <h2 className="mb-4 text-xl font-semibold">
           {filteredVendors.length} {selectedCategory === 'All Categories' ? 'Vendors' : selectedCategory}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredVendors.map((vendor) => (
             <VendorCard
               key={vendor.id}
@@ -219,7 +221,7 @@ export default function VendorsPage() {
 
 function VendorCard({ vendor, isFavorite, onToggleFavorite }: any) {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="glass-card surface-3d overflow-hidden border-fuchsia-100 transition-shadow">
       <div className="relative h-48 bg-muted">
         <img
           src={vendor.image}
@@ -237,11 +239,11 @@ function VendorCard({ vendor, isFavorite, onToggleFavorite }: any) {
         <Badge className="absolute top-3 left-3 bg-primary/90">{vendor.category}</Badge>
       </div>
 
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="line-clamp-1">{vendor.name}</CardTitle>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="mt-1 flex items-center gap-2">
               <div className="flex items-center">
                 {[...Array(5)].map((_, i) => (
                   <Star
@@ -266,6 +268,11 @@ function VendorCard({ vendor, isFavorite, onToggleFavorite }: any) {
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground line-clamp-2">{vendor.description}</p>
 
+        <div className="grid grid-cols-2 gap-2">
+          <img src="https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=600&q=80" alt="portfolio one" className="h-24 w-full rounded-xl object-cover" />
+          <img src="https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=600&q=80" alt="portfolio two" className="h-24 w-full rounded-xl object-cover" />
+        </div>
+
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <MapPin className="w-4 h-4" />
@@ -281,7 +288,7 @@ function VendorCard({ vendor, isFavorite, onToggleFavorite }: any) {
           </div>
         </div>
 
-        <Button className="w-full">View Details</Button>
+        <Button className="w-full bg-gradient-to-r from-fuchsia-600 to-violet-500 text-white">Public Preview</Button>
       </CardContent>
     </Card>
   );

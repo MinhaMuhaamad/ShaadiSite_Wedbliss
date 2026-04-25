@@ -2,31 +2,29 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Users, DollarSign, Calendar, Settings, MessageSquare, Camera, Store } from 'lucide-react';
+import { Calendar, DollarSign, LayoutGrid, Store, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const menuItems = [
-  { href: '/dashboard', icon: Heart, label: 'Dashboard', role: 'all' },
-  { href: '/dashboard/weddings', icon: Heart, label: 'Weddings', role: 'all' },
-  { href: '/dashboard/guests', icon: Users, label: 'Guests', role: ['bride', 'family'] },
-  { href: '/dashboard/budget', icon: DollarSign, label: 'Budget', role: ['bride', 'family'] },
-  { href: '/dashboard/vendors', icon: Store, label: 'Vendors', role: 'all' },
-  { href: '/dashboard/timeline', icon: Calendar, label: 'Timeline', role: ['bride', 'family'] },
-  { href: '/dashboard/chat', icon: MessageSquare, label: 'Chat', role: 'all' },
-  { href: '/dashboard/memories', icon: Camera, label: 'Memories', role: 'all' },
-];
-
-const settingsItems = [
-  { href: '/dashboard/profile', icon: Settings, label: 'Profile', role: 'all' },
-  { href: '/dashboard/settings', icon: Settings, label: 'Collaborators', role: 'all' },
+  { href: '/dashboard', icon: LayoutGrid, label: 'Command Center' },
+  { href: '/dashboard/profile', icon: User, label: 'My Profile' },
+  { href: '/dashboard/vendors', icon: Store, label: 'Vendors' },
+  { href: '/dashboard/budget', icon: DollarSign, label: 'Budget' },
+  { href: '/dashboard/timeline', icon: Calendar, label: 'Calendar' }
 ];
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex w-64 bg-card border-r border-border flex-col">
-      <div className="flex-1 overflow-auto p-4">
+    <aside className="hidden w-72 border-r border-fuchsia-100/80 bg-white/80 md:flex md:flex-col">
+      <div className="sticky top-16 flex-1 overflow-auto p-5">
+        <div className="mb-7">
+          <p className="text-2xl font-bold text-fuchsia-800">WedBliss Planning</p>
+          <p className="text-sm text-muted-foreground">Premium Suite</p>
+        </div>
+
         <div className="space-y-2 mb-6">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -37,41 +35,22 @@ export default function DashboardSidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all',
                   isActive
-                    ? 'bg-primary/10 text-primary font-semibold'
-                    : 'text-muted-foreground hover:bg-muted'
+                    ? 'bg-gradient-to-r from-fuchsia-600 to-violet-500 text-white shadow-[0_16px_32px_-16px_rgba(192,38,211,0.9)]'
+                    : 'text-muted-foreground hover:bg-fuchsia-50 hover:text-fuchsia-700'
                 )}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="h-4 w-4" />
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </div>
 
-        <div className="border-t border-border pt-4">
-          {settingsItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm',
-                  isActive
-                    ? 'bg-primary/10 text-primary font-semibold'
-                    : 'text-muted-foreground hover:bg-muted'
-                )}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
+        <Button className="w-full rounded-xl border border-fuchsia-200 bg-white text-fuchsia-700 shadow-none hover:bg-fuchsia-50">
+          Add New Expense
+        </Button>
       </div>
     </aside>
   );
