@@ -56,7 +56,10 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Platform overview and analytics</p>
+        <p className="text-muted-foreground mt-1">
+          Platform Manager console: approve vendor registrations, manage user accounts, monitor analytics, configure
+          pricing plans, and broadcast announcements.
+        </p>
       </div>
 
       {/* Key Metrics */}

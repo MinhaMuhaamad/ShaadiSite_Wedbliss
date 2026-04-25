@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Heart, Share2, Download, Upload } from 'lucide-react';
+import { Plus, Heart, Share2, Download, Upload, Camera } from 'lucide-react';
 
 const MOCK_ALBUMS = [
   {
