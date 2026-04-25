@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -29,14 +29,21 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [vendorCount, setVendorCount] = useState(0);
   const [now, setNow] = useState(Date.now());
+  const [selectedWeddingDate, setSelectedWeddingDate] = useState('');
+  const [quickWeddingDate, setQuickWeddingDate] = useState('');
+  const [savingDate, setSavingDate] = useState(false);
+  const inFlightRef = useRef(false);
 
   const loadDashboard = async () => {
     if (!token) return;
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     try {
       setError('');
       const weddings = await apiRequest<Wedding[]>('/api/weddings', token);
       const activeWedding = weddings[0] || null;
       setWedding(activeWedding);
+      setSelectedWeddingDate(activeWedding?.weddingDate ? activeWedding.weddingDate.slice(0, 10) : '');
       if (!activeWedding) return;
 
       const [budgetData, stats, bookingData, vendors] = await Promise.all([
@@ -53,6 +60,7 @@ export default function DashboardPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load dashboard.');
     } finally {
+      inFlightRef.current = false;
       setLoading(false);
     }
   };
@@ -117,6 +125,43 @@ export default function DashboardPage() {
     ? Math.min(100, Math.round((budget.totalSpent / budget.totalBudget) * 100))
     : 0;
 
+  const saveWeddingDate = async () => {
+    if (!token || !wedding || !selectedWeddingDate) return;
+    setSavingDate(true);
+    try {
+      await apiRequest(`/api/weddings/${wedding._id}`, token, {
+        method: 'PUT',
+        body: JSON.stringify({ weddingDate: selectedWeddingDate })
+      });
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save wedding date.');
+    } finally {
+      setSavingDate(false);
+    }
+  };
+
+  const createWeddingFromDate = async () => {
+    if (!token || !quickWeddingDate) return;
+    setSavingDate(true);
+    try {
+      await apiRequest('/api/weddings', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          weddingDate: quickWeddingDate,
+          brideName: user?.name || 'Bride',
+          groomName: 'Partner'
+        })
+      });
+      await loadDashboard();
+      setQuickWeddingDate('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create wedding date.');
+    } finally {
+      setSavingDate(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -133,7 +178,18 @@ export default function DashboardPage() {
     return (
       <div className="space-y-4">
         <h1 className="text-3xl font-bold">Wedding Dashboard</h1>
-        <p className="text-muted-foreground">Create your wedding to unlock live planning insights.</p>
+        <p className="text-muted-foreground">Select your wedding date to start the live countdown.</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="date"
+            value={quickWeddingDate}
+            onChange={(event) => setQuickWeddingDate(event.target.value)}
+            className="rounded-xl border border-input bg-background px-3 py-2"
+          />
+          <Button onClick={createWeddingFromDate} disabled={!quickWeddingDate || savingDate}>
+            {savingDate ? 'Saving...' : 'Start Countdown'}
+          </Button>
+        </div>
         <Link href="/dashboard/weddings/new">
           <Button>Set up Wedding</Button>
         </Link>
@@ -147,6 +203,18 @@ export default function DashboardPage() {
         <CardContent className="p-7">
           <p className="text-sm text-white/80">Welcome back, {user?.name || wedding.brideName || 'Bride'}</p>
           <h1 className="mt-1 text-4xl font-bold">Your Wedding Dashboard</h1>
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-white/20 p-2">
+            <input
+              type="date"
+              value={selectedWeddingDate}
+              onChange={(event) => setSelectedWeddingDate(event.target.value)}
+              className="rounded-lg border border-white/40 bg-white/20 px-3 py-2 text-sm text-white"
+            />
+            <Button variant="secondary" size="sm" onClick={saveWeddingDate} disabled={savingDate || !selectedWeddingDate}>
+              {savingDate ? 'Saving...' : 'Set Wedding Date'}
+            </Button>
+            <p className="text-xs text-white/85">Select your wedding date to start the countdown.</p>
+          </div>
           <div className="mt-5 flex gap-8">
             <div>
               <p className="text-3xl font-semibold">{countdown.days}</p>

@@ -2,16 +2,27 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, DollarSign, LayoutGrid, Store, User } from 'lucide-react';
+import { Calendar, DollarSign, LayoutGrid, MessageCircle, Store, User, Users, WalletCards, CheckSquare, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 const menuItems = [
-  { href: '/dashboard', icon: LayoutGrid, label: 'Command Center' },
+  { href: '/dashboard', icon: LayoutGrid, label: 'Wedding Dashboard' },
   { href: '/dashboard/profile', icon: User, label: 'My Profile' },
-  { href: '/dashboard/vendors', icon: Store, label: 'Vendors' },
-  { href: '/dashboard/budget', icon: DollarSign, label: 'Budget' },
-  { href: '/dashboard/timeline', icon: Calendar, label: 'Calendar' }
+  { href: '/dashboard/weddings', icon: Calendar, label: 'Wedding Setup' },
+  { href: '/dashboard/guests', icon: Users, label: 'Guest Management' },
+  { href: '/dashboard/guests/add', icon: Users, label: 'Add / Edit Guest' },
+  { href: '/dashboard/guests/rsvp', icon: CheckSquare, label: 'RSVP Tracker' },
+  { href: '/dashboard/guests/seating', icon: Users, label: 'Seating Plan' },
+  { href: '/dashboard/budget', icon: DollarSign, label: 'Budget Overview' },
+  { href: '/dashboard/budget/add-expense', icon: DollarSign, label: 'Add Expense' },
+  { href: '/dashboard/budget/expenses', icon: WalletCards, label: 'Expense History' },
+  { href: '/dashboard/vendors', icon: Store, label: 'Browse Vendors' },
+  { href: '/dashboard/vendors/compare', icon: Store, label: 'Compare Vendors' },
+  { href: '/dashboard/vendors/bookings', icon: Store, label: 'My Bookings' },
+  { href: '/dashboard/timeline', icon: Calendar, label: 'Checklist Timeline' },
+  { href: '/dashboard/chat', icon: MessageCircle, label: 'Messages' },
+  { href: '/dashboard/memories', icon: Heart, label: 'Memories' }
 ];
 
 export default function DashboardSidebar() {
@@ -48,9 +59,11 @@ export default function DashboardSidebar() {
           })}
         </div>
 
-        <Button className="w-full rounded-xl border border-fuchsia-200 bg-white text-fuchsia-700 shadow-none hover:bg-fuchsia-50">
-          Add New Expense
-        </Button>
+        <Link href="/dashboard/budget/add-expense">
+          <Button className="w-full rounded-xl border border-fuchsia-200 bg-white text-fuchsia-700 shadow-none hover:bg-fuchsia-50">
+            Add New Expense
+          </Button>
+        </Link>
       </div>
     </aside>
   );

@@ -26,6 +26,12 @@ export async function apiRequest<T>(
   return payload as T;
 }
 
+export async function getActiveWeddingId(token: string | null): Promise<string | null> {
+  if (!token) return null;
+  const weddings = await apiRequest<{ _id: string }[]>('/api/weddings', token);
+  return weddings[0]?._id || null;
+}
+
 export function formatCurrency(value: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
