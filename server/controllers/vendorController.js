@@ -160,7 +160,7 @@ exports.addReview = async (req, res) => {
       userId: req.user.id,
       rating,
       comment,
-      date: new Date()
+      createdAt: new Date()
     });
 
     // Update average rating

@@ -80,6 +80,30 @@ exports.updateBudgetItem = async (req, res) => {
   }
 };
 
+// Delete budget item
+exports.deleteBudgetItem = async (req, res) => {
+  try {
+    const { categoryIndex, itemIndex } = req.body;
+    const budget = await Budget.findById(req.params.id);
+    if (!budget) {
+      return res.status(404).json({ message: 'Budget not found' });
+    }
+
+    if (!budget.categories[categoryIndex]?.items[itemIndex]) {
+      return res.status(404).json({ message: 'Budget item not found' });
+    }
+
+    budget.categories[categoryIndex].items.splice(itemIndex, 1);
+    budget.totalSpent = calculateTotalSpent(budget.categories);
+    budget.remainingBudget = budget.totalBudget - budget.totalSpent;
+
+    await budget.save();
+    res.json({ message: 'Budget item deleted', budget });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Get budget summary
 exports.getBudgetSummary = async (req, res) => {
   try {

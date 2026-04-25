@@ -5,7 +5,19 @@ exports.getWeddingBookings = async (req, res) => {
     const bookings = await Booking.find({ weddingId: req.params.weddingId })
       .populate('vendorId', 'businessName category location averageRating pricing contact')
       .sort({ createdAt: -1 });
-    res.json(bookings);
+    const mapped = bookings.map((booking) => {
+      const data = booking.toObject();
+      return {
+        ...data,
+        vendorId: data.vendorId
+          ? {
+              ...data.vendorId,
+              name: data.vendorId.businessName
+            }
+          : null
+      };
+    });
+    res.json(mapped);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

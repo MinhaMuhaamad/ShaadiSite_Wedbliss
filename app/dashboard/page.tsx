@@ -4,64 +4,177 @@ import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Calendar, CheckCircle2, Clock3, DollarSign, Heart, MessageSquare, Users } from 'lucide-react';
+import { Calendar, CheckCircle2, DollarSign, Loader2, MessageCircle, Plus, Users } from 'lucide-react';
+import { useAuth } from '@/lib/context/AuthContext';
+import { apiRequest, formatCurrency } from '@/lib/dashboard-api';
+
+type Wedding = { _id: string; brideName?: string; groomName?: string; weddingDate: string };
+type Budget = {
+  totalBudget: number;
+  totalSpent: number;
+  remainingBudget: number;
+  categories: { name: string; items: { itemName: string; status: string; amount: number; date?: string }[] }[];
+};
+type GuestStats = { totalInvited: number; accepted: number; pending: number };
+type Booking = { _id: string; status: string; vendorId?: { businessName?: string }; eventDate?: string; createdAt: string };
+type Vendor = { _id: string };
 
 export default function DashboardPage() {
-  const weddingDate = useMemo(() => new Date('2026-10-24T18:00:00'), []);
-  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
+  const { token, user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [wedding, setWedding] = useState<Wedding | null>(null);
+  const [budget, setBudget] = useState<Budget | null>(null);
+  const [guestStats, setGuestStats] = useState<GuestStats | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [vendorCount, setVendorCount] = useState(0);
+  const [now, setNow] = useState(Date.now());
+
+  const loadDashboard = async () => {
+    if (!token) return;
+    try {
+      setError('');
+      const weddings = await apiRequest<Wedding[]>('/api/weddings', token);
+      const activeWedding = weddings[0] || null;
+      setWedding(activeWedding);
+      if (!activeWedding) return;
+
+      const [budgetData, stats, bookingData, vendors] = await Promise.all([
+        apiRequest<Budget | null>(`/api/budget/wedding/${activeWedding._id}`, token),
+        apiRequest<GuestStats>(`/api/guests/stats/${activeWedding._id}`, token),
+        apiRequest<Booking[]>(`/api/bookings/wedding/${activeWedding._id}`, token),
+        apiRequest<Vendor[]>('/api/vendors', token)
+      ]);
+
+      setBudget(budgetData);
+      setGuestStats(stats);
+      setBookings(bookingData);
+      setVendorCount(vendors.length);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load dashboard.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const tick = () => {
-      const diff = Math.max(weddingDate.getTime() - Date.now(), 0);
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      setCountdown({ days, hours, minutes });
-    };
-    tick();
-    const timer = setInterval(tick, 60000);
+    if (!token) return;
+    loadDashboard();
+    const refresh = setInterval(loadDashboard, 20000);
+    return () => clearInterval(refresh);
+  }, [token]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [weddingDate]);
+  }, []);
+
+  const countdown = useMemo(() => {
+    if (!wedding?.weddingDate) return { days: 0, hours: 0, minutes: 0 };
+    const target = new Date(wedding.weddingDate).getTime();
+    const diff = Math.max(0, target - now);
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / (1000 * 60)) % 60)
+    };
+  }, [wedding?.weddingDate, now]);
+
+  const taskSummary = useMemo(() => {
+    const items = budget?.categories.flatMap((category) => category.items || []) || [];
+    return {
+      pending: items.filter((item) => item.status === 'pending').length,
+      inProgress: items.filter((item) => item.status === 'confirmed').length,
+      completed: items.filter((item) => item.status === 'paid').length
+    };
+  }, [budget]);
+
+  const upcomingAppointments = useMemo(
+    () =>
+      bookings.filter((booking) => booking.eventDate && new Date(booking.eventDate) >= new Date()).slice(0, 3),
+    [bookings]
+  );
+
+  const activities = useMemo(() => {
+    const budgetActivities =
+      budget?.categories
+        .flatMap((category) => category.items || [])
+        .slice(-4)
+        .map((item) => ({
+          title: `Expense update: ${item.itemName}`,
+          description: `${item.status.toUpperCase()} • ${formatCurrency(item.amount)}`
+        })) || [];
+
+    const bookingActivities = bookings.slice(0, 3).map((booking) => ({
+      title: `Booking ${booking.status}`,
+      description: booking.vendorId?.businessName || 'Vendor'
+    }));
+
+    return [...bookingActivities, ...budgetActivities].slice(0, 6);
+  }, [bookings, budget]);
+
+  const spentPercentage = budget?.totalBudget
+    ? Math.min(100, Math.round((budget.totalSpent / budget.totalBudget) * 100))
+    : 0;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-fuchsia-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</p>;
+  }
+
+  if (!wedding) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold">Wedding Dashboard</h1>
+        <p className="text-muted-foreground">Create your wedding to unlock live planning insights.</p>
+        <Link href="/dashboard/weddings/new">
+          <Button>Set up Wedding</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-fuchsia-100 bg-gradient-to-r from-violet-300 to-fuchsia-500 text-white">
+      <Card className="overflow-hidden border-fuchsia-100 bg-gradient-to-r from-violet-300 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-400/20">
         <CardContent className="p-7">
-          <p className="text-sm text-white/80">Welcome back</p>
-          <h1 className="mt-1 text-4xl font-bold">{countdown.days} Days to Say "I Do"</h1>
+          <p className="text-sm text-white/80">Welcome back, {user?.name || wedding.brideName || 'Bride'}</p>
+          <h1 className="mt-1 text-4xl font-bold">Your Wedding Dashboard</h1>
           <div className="mt-5 flex gap-8">
-            {[
-              { label: 'DAYS', value: String(countdown.days) },
-              { label: 'HOURS', value: String(countdown.hours) },
-              { label: 'MINUTES', value: String(countdown.minutes) }
-            ].map((item) => (
-              <div key={item.label}>
-                <p className="text-3xl font-semibold">{item.value}</p>
-                <p className="text-xs tracking-widest text-white/75">{item.label}</p>
-              </div>
-            ))}
+            <div>
+              <p className="text-3xl font-semibold">{countdown.days}</p>
+              <p className="text-xs tracking-widest text-white/75">DAYS</p>
+            </div>
+            <div>
+              <p className="text-3xl font-semibold">{countdown.hours}</p>
+              <p className="text-xs tracking-widest text-white/75">HOURS</p>
+            </div>
+            <div>
+              <p className="text-3xl font-semibold">{countdown.minutes}</p>
+              <p className="text-xs tracking-widest text-white/75">MINUTES</p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <Card className="border-fuchsia-100 bg-white/90">
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Next Task</CardTitle>
-            <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-xs font-semibold text-fuchsia-700">DUE TODAY</span>
+          <CardHeader>
+            <CardTitle>Task Summary</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold">Final Cake Tasting</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Confirm flavor combinations with "Delite Bakery" and finalize table design by 5:30 pm.
-            </p>
-            <div className="mt-5 flex gap-3">
-              <Button variant="outline">View Details</Button>
-              <Button>Mark as Complete</Button>
-            </div>
+          <CardContent className="grid grid-cols-3 gap-3">
+            <TaskCard label="Pending" value={taskSummary.pending} />
+            <TaskCard label="In Progress" value={taskSummary.inProgress} />
+            <TaskCard label="Completed" value={taskSummary.completed} />
           </CardContent>
         </Card>
-
         <Card className="border-fuchsia-100 bg-white/90">
           <CardHeader>
             <CardTitle>Budget Overview</CardTitle>
@@ -69,23 +182,27 @@ export default function DashboardPage() {
           <CardContent>
             <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-[12px] border-fuchsia-500 text-center">
               <div>
-                <p className="text-3xl font-bold">$42,500</p>
+                <p className="text-2xl font-bold">{formatCurrency(budget?.totalBudget || 0)}</p>
                 <p className="text-xs text-muted-foreground">allocated</p>
               </div>
             </div>
             <div className="mt-4 h-2 rounded-full bg-fuchsia-100">
-              <div className="h-2 w-[72%] rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500" />
+              <div className="h-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500" style={{ width: `${spentPercentage}%` }} />
             </div>
             <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-              <span>spent $30,500</span>
-              <span>remaining $12,000</span>
+              <span>spent {formatCurrency(budget?.totalSpent || 0)}</span>
+              <span>remaining {formatCurrency(budget?.remainingBudget || 0)}</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {quickStats.map((item) => (
+        {[
+          { label: 'Total Invited', value: guestStats?.totalInvited || 0, icon: Users },
+          { label: 'Upcoming Appointments', value: upcomingAppointments.length, icon: Calendar },
+          { label: 'Vendors Available', value: vendorCount, icon: DollarSign }
+        ].map((item) => (
           <Card key={item.label} className="border-fuchsia-100 bg-white/85">
             <CardContent className="flex items-center gap-3 p-4">
               <span className="rounded-xl bg-fuchsia-100 p-2 text-fuchsia-700">
@@ -109,7 +226,7 @@ export default function DashboardPage() {
             {activities.map((activity) => (
               <div key={activity.title} className="flex items-start gap-3 rounded-xl border border-fuchsia-100 bg-fuchsia-50/50 p-3">
                 <span className="mt-0.5 rounded-full bg-white p-1.5 text-fuchsia-600 shadow">
-                  <activity.icon className="h-3.5 w-3.5" />
+                  <CheckCircle2 className="h-3.5 w-3.5" />
                 </span>
                 <div>
                   <p className="text-sm font-semibold">{activity.title}</p>
@@ -125,9 +242,9 @@ export default function DashboardPage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Link href="/dashboard/guests/add"><Button className="w-full justify-start gap-2"><Users className="h-4 w-4" /> Add Guest</Button></Link>
+            <Link href="/dashboard/guests/add"><Button className="w-full justify-start gap-2"><Plus className="h-4 w-4" /> Add Guest</Button></Link>
             <Link href="/dashboard/budget/add-expense"><Button variant="outline" className="w-full justify-start gap-2"><DollarSign className="h-4 w-4" /> Add Expense</Button></Link>
-            <Link href="/dashboard/chat"><Button variant="outline" className="w-full justify-start gap-2"><MessageSquare className="h-4 w-4" /> Message Vendor</Button></Link>
+            <Link href="/dashboard/chat"><Button variant="outline" className="w-full justify-start gap-2"><MessageCircle className="h-4 w-4" /> Message Vendor</Button></Link>
             <Link href="/dashboard/timeline"><Button variant="outline" className="w-full justify-start gap-2"><Calendar className="h-4 w-4" /> View Checklist</Button></Link>
           </CardContent>
         </Card>
@@ -135,26 +252,12 @@ export default function DashboardPage() {
     </div>
   );
 }
-const quickStats = [
-  { label: 'Pending Tasks', value: '24', icon: Clock3 },
-  { label: 'In Progress', value: '12', icon: Heart },
-  { label: 'Completed', value: '142', icon: CheckCircle2 }
-];
-const activities = [
-  {
-    title: 'David marked "Guest List" as 100% complete.',
-    description: '2h ago by David',
-    icon: CheckCircle2
-  },
-  {
-    title: 'New RSVP received from "The Miller Family".',
-    description: '3h ago by RSVP System',
-    icon: Users
-  },
-  {
-    title: 'Vendor "Enchanted Florals" uploaded a new contract.',
-    description: 'Yesterday at 6:20 PM',
-    icon: DollarSign
-  }
-];
 
+function TaskCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl border border-fuchsia-100 bg-fuchsia-50/70 p-3 text-center">
+      <p className="text-2xl font-bold text-fuchsia-900">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  );
+}
