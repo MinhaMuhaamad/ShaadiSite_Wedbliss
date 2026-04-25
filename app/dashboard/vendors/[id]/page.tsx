@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Star, MapPin, Phone, Mail } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
 const MOCK_VENDOR = {
   id: 1,
@@ -69,6 +70,9 @@ export default function VendorDetailPage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedPackage, setSelectedPackage] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviews, setReviews] = useState(MOCK_VENDOR.recentReviews);
 
   const handleBooking = () => {
     if (selectedDate && selectedPackage) {
@@ -115,7 +119,11 @@ export default function VendorDetailPage() {
               <div className="flex items-center gap-3"><Phone className="h-5 w-5 text-primary" /><a href={`tel:${MOCK_VENDOR.contact.phone}`} className="text-sm hover:underline">{MOCK_VENDOR.contact.phone}</a></div>
               <div className="flex items-center gap-3"><Mail className="h-5 w-5 text-primary" /><a href={`mailto:${MOCK_VENDOR.contact.email}`} className="text-sm hover:underline">{MOCK_VENDOR.contact.email}</a></div>
               <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 text-primary" /><span className="text-sm">{MOCK_VENDOR.location}</span></div>
-              <Button className="mt-4 w-full" onClick={() => setShowBookingForm(true)}>Public Preview</Button>
+              <div className="space-y-2">
+                <Link href={`/dashboard/vendors/book/${params.id}`}><Button className="w-full">Book Now</Button></Link>
+                <Button variant="outline" className="w-full" onClick={() => setShowBookingForm(true)}>Send Quote Request</Button>
+                <Button variant="outline" className="w-full">Message Vendor</Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -183,7 +191,7 @@ export default function VendorDetailPage() {
           <CardHeader><CardTitle>Recent Reviews</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {MOCK_VENDOR.recentReviews.map((review, idx) => (
+              {reviews.map((review, idx) => (
                 <div key={idx} className="border-b border-border pb-6 last:border-b-0">
                   <div className="mb-2 flex items-start justify-between">
                     <div><p className="font-semibold">{review.author}</p><p className="text-xs text-muted-foreground">{review.date}</p></div>
@@ -192,6 +200,25 @@ export default function VendorDetailPage() {
                   <p className="text-sm text-muted-foreground">{review.text}</p>
                 </div>
               ))}
+            </div>
+            <div className="mt-6 rounded-xl border border-fuchsia-100 bg-fuchsia-50/50 p-4">
+              <p className="mb-2 font-semibold">Submit Verified Review</p>
+              <div className="mb-2 flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button key={star} onClick={() => setReviewRating(star)} className={star <= reviewRating ? 'text-yellow-500' : 'text-muted-foreground'}>★</button>
+                ))}
+              </div>
+              <Textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Share your experience..." />
+              <Button
+                className="mt-3"
+                onClick={() => {
+                  if (!reviewText.trim()) return;
+                  setReviews([{ author: 'Booked Bride', date: new Date().toISOString().slice(0, 10), rating: reviewRating, text: reviewText }, ...reviews]);
+                  setReviewText('');
+                }}
+              >
+                Submit Review
+              </Button>
             </div>
           </CardContent>
         </Card>

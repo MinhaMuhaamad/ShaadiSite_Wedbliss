@@ -47,7 +47,8 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -65,15 +66,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // Save token to localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      if (data.user?.role === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/dashboard');
-      }
+      localStorage.setItem('registeredEmail', formData.email);
+      router.push('/auth/verify-email');
     } catch (err) {
       setError('Connection error. Is the server running?');
     } finally {

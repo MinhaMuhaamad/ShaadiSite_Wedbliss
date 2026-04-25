@@ -112,7 +112,9 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-fuchsia-900">Password</Label>
-                  <span className="text-xs text-fuchsia-600">Forgot password?</span>
+                  <Link href="/auth/forgot-password" className="text-xs text-fuchsia-600 hover:underline">
+                    Forgot password?
+                  </Link>
                 </div>
                 <Input
                   id="password"
@@ -151,6 +153,12 @@ export default function LoginPage() {
               Don&apos;t have an account?{' '}
               <Link href="/auth/register" className="font-semibold text-fuchsia-900 hover:underline">
                 Sign up
+              </Link>
+            </p>
+            <p className="mt-1 text-center text-xs text-fuchsia-700/85">
+              Waiting for activation?{' '}
+              <Link href="/auth/verify-email" className="font-semibold text-fuchsia-900 hover:underline">
+                Verify email
               </Link>
             </p>
             <p className="mt-2 text-center text-xs text-fuchsia-700/85">

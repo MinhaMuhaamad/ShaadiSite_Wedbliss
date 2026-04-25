@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, MoreVertical, Mail, Phone, User, CheckCircle, Clock, XCircle } from 'lucide-react';
+import Link from 'next/link';
 
 const MOCK_GUESTS = [
   { id: 1, name: 'Sarah Johnson', email: 'sarah@email.com', phone: '(555) 123-4567', side: 'bride', party: 'immediate family', plusOnes: 1, rsvpStatus: 'accepted', dietaryRestrictions: 'Vegetarian', notes: 'Bringing spouse' },
@@ -71,6 +72,11 @@ export default function GuestsPage() {
         <div>
           <h1 className="text-3xl font-bold">Guest Management</h1>
           <p className="text-muted-foreground mt-1">Manage your guest list and track RSVPs</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/dashboard/guests/rsvp"><Button variant="outline">RSVP Tracker</Button></Link>
+          <Link href="/dashboard/guests/seating"><Button variant="outline">Seating Builder</Button></Link>
+          <Link href="/dashboard/guests/add"><Button variant="outline">Add/Edit Guest</Button></Link>
         </div>
         <Dialog open={showAddGuest} onOpenChange={setShowAddGuest}>
           <DialogTrigger asChild>
@@ -207,6 +213,10 @@ export default function GuestsPage() {
                 <SelectItem value="groom">Groom&apos;s Side</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button variant="outline">Bulk Import CSV/Excel</Button>
+            <Button variant="outline">Export Guest List PDF</Button>
           </div>
         </CardContent>
       </Card>

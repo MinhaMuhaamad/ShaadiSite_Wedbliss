@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, Plus } from 'lucide-react';
+import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import Link from 'next/link';
 
 const BUDGET_CATEGORIES = [
   'Venue',
@@ -51,6 +53,7 @@ export default function BudgetPage() {
 
   const remainingBudget = mockBudgetData.totalBudget - mockBudgetData.totalSpent;
   const spentPercentage = Math.round((mockBudgetData.totalSpent / mockBudgetData.totalBudget) * 100);
+  const chartColors = ['#d946ef', '#a855f7', '#f472b6', '#c026d3', '#e879f9', '#f0abfc', '#7c3aed', '#ec4899', '#9333ea', '#db2777'];
 
   const handleAddItem = () => {
     if (newItem.category && newItem.budgeted) {
@@ -119,6 +122,11 @@ export default function BudgetPage() {
             </div>
           </DialogContent>
         </Dialog>
+        <div className="flex gap-2">
+          <Link href="/dashboard/budget/add-expense"><Button variant="outline">Add Expense</Button></Link>
+          <Link href="/dashboard/budget/expenses"><Button variant="outline">Expense History</Button></Link>
+          <Button variant="outline">Download PDF Report</Button>
+        </div>
       </div>
 
       <Card className="glass-card surface-3d overflow-hidden border-fuchsia-100">
@@ -188,6 +196,33 @@ export default function BudgetPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="glass-card border-fuchsia-100">
+          <CardHeader><CardTitle>Budget Allocation Donut</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={mockBudgetData.items} dataKey="spent" nameKey="category" cx="50%" cy="50%" outerRadius={84}>
+                  {mockBudgetData.items.map((_, i) => <Cell key={i} fill={chartColors[i % chartColors.length]} />)}
+                </Pie>
+                <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        <Card className="glass-card border-fuchsia-100">
+          <CardHeader><CardTitle>Planned vs Actual</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={mockBudgetData.items.slice(0, 6)}>
+                <XAxis dataKey="category" hide />
+                <YAxis />
+                <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
+                <Bar dataKey="budgeted" fill="#c084fc" />
+                <Bar dataKey="spent" fill="#d946ef" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
         <Card className="glass-card border-fuchsia-100">
           <CardHeader>
             <CardTitle>Spending Trend</CardTitle>

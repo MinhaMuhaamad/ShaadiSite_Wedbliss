@@ -1,22 +1,39 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Calendar, CheckCircle2, Clock3, DollarSign, Heart, Plus, Users } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock3, DollarSign, Heart, MessageSquare, Users } from 'lucide-react';
 
 export default function DashboardPage() {
+  const weddingDate = useMemo(() => new Date('2026-10-24T18:00:00'), []);
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
+
+  useEffect(() => {
+    const tick = () => {
+      const diff = Math.max(weddingDate.getTime() - Date.now(), 0);
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      setCountdown({ days, hours, minutes });
+    };
+    tick();
+    const timer = setInterval(tick, 60000);
+    return () => clearInterval(timer);
+  }, [weddingDate]);
+
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden border-fuchsia-100 bg-gradient-to-r from-violet-300 to-fuchsia-500 text-white">
         <CardContent className="p-7">
           <p className="text-sm text-white/80">Welcome back</p>
-          <h1 className="mt-1 text-4xl font-bold">124 Days to Say "I Do"</h1>
+          <h1 className="mt-1 text-4xl font-bold">{countdown.days} Days to Say "I Do"</h1>
           <div className="mt-5 flex gap-8">
             {[
-              { label: 'DAYS', value: '124' },
-              { label: 'TASKS', value: '18' },
-              { label: 'VENDORS', value: '42' }
+              { label: 'DAYS', value: String(countdown.days) },
+              { label: 'HOURS', value: String(countdown.hours) },
+              { label: 'MINUTES', value: String(countdown.minutes) }
             ].map((item) => (
               <div key={item.label}>
                 <p className="text-3xl font-semibold">{item.value}</p>
@@ -108,23 +125,21 @@ export default function DashboardPage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Link href="/dashboard/weddings/new"><Button className="w-full justify-start gap-2"><Plus className="h-4 w-4" /> New Wedding</Button></Link>
-            <Link href="/dashboard/guests"><Button variant="outline" className="w-full justify-start gap-2"><Users className="h-4 w-4" /> Guests</Button></Link>
-            <Link href="/dashboard/budget"><Button variant="outline" className="w-full justify-start gap-2"><DollarSign className="h-4 w-4" /> Budget</Button></Link>
-            <Link href="/dashboard/timeline"><Button variant="outline" className="w-full justify-start gap-2"><Calendar className="h-4 w-4" /> Timeline</Button></Link>
+            <Link href="/dashboard/guests/add"><Button className="w-full justify-start gap-2"><Users className="h-4 w-4" /> Add Guest</Button></Link>
+            <Link href="/dashboard/budget/add-expense"><Button variant="outline" className="w-full justify-start gap-2"><DollarSign className="h-4 w-4" /> Add Expense</Button></Link>
+            <Link href="/dashboard/chat"><Button variant="outline" className="w-full justify-start gap-2"><MessageSquare className="h-4 w-4" /> Message Vendor</Button></Link>
+            <Link href="/dashboard/timeline"><Button variant="outline" className="w-full justify-start gap-2"><Calendar className="h-4 w-4" /> View Checklist</Button></Link>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
-
 const quickStats = [
-  { label: 'Tasks Completed', value: '142 / 180', icon: CheckCircle2 },
-  { label: 'Vendors Booked', value: '12 / 15', icon: Heart },
-  { label: 'Days Remaining', value: '28', icon: Clock3 }
+  { label: 'Pending Tasks', value: '24', icon: Clock3 },
+  { label: 'In Progress', value: '12', icon: Heart },
+  { label: 'Completed', value: '142', icon: CheckCircle2 }
 ];
-
 const activities = [
   {
     title: 'David marked "Guest List" as 100% complete.',
@@ -142,3 +157,4 @@ const activities = [
     icon: DollarSign
   }
 ];
+

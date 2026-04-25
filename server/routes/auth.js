@@ -21,6 +21,10 @@ const loginValidation = [
 // Routes
 router.post('/register', registerValidation, authController.register);
 router.post('/login', loginValidation, authController.login);
+router.get('/verify-email/:token', authController.verifyEmail);
+router.post('/resend-verification', body('email').isEmail(), authController.resendVerification);
+router.post('/forgot-password', body('email').isEmail(), authController.forgotPassword);
+router.post('/reset-password/:token', body('password').isLength({ min: 6 }), authController.resetPassword);
 router.get('/me', verifyToken, authController.getCurrentUser);
 router.post('/logout', verifyToken, authController.logout);
 

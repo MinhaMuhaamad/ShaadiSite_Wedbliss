@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Mail, MapPin, Phone, Star } from 'lucide-react';
+import Link from 'next/link';
 
 const VENDOR_CATEGORIES = [
   'All Categories',
@@ -106,13 +107,21 @@ export default function VendorsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState('rating');
+  const [city, setCity] = useState('all');
+  const [priceRange, setPriceRange] = useState('all');
+  const [ratingFloor, setRatingFloor] = useState('all');
+  const [availabilityDate, setAvailabilityDate] = useState('');
 
   const filteredVendors = MOCK_VENDORS
     .filter(vendor => {
       const matchesCategory = selectedCategory === 'All Categories' || vendor.category === selectedCategory;
       const matchesSearch = vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            vendor.description.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      const matchesCity = city === 'all' || vendor.location === city;
+      const matchesPrice = priceRange === 'all' || vendor.price === priceRange;
+      const matchesRating = ratingFloor === 'all' || vendor.rating >= Number(ratingFloor);
+      const matchesAvailability = availabilityDate ? Boolean(availabilityDate) : true;
+      return matchesCategory && matchesSearch && matchesCity && matchesPrice && matchesRating && matchesAvailability;
     })
     .sort((a, b) => {
       if (sortBy === 'rating') return b.rating - a.rating;
@@ -165,7 +174,7 @@ export default function VendorsPage() {
               className="w-full"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-6">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger>
                   <SelectValue />
@@ -176,6 +185,34 @@ export default function VendorsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={city} onValueChange={setCity}>
+                <SelectTrigger><SelectValue placeholder="City" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Cities</SelectItem>
+                  <SelectItem value="Downtown">Downtown</SelectItem>
+                  <SelectItem value="City Center">City Center</SelectItem>
+                  <SelectItem value="Garden District">Garden District</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={priceRange} onValueChange={setPriceRange}>
+                <SelectTrigger><SelectValue placeholder="Price" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any Price</SelectItem>
+                  <SelectItem value="$">$</SelectItem>
+                  <SelectItem value="$$">$$</SelectItem>
+                  <SelectItem value="$$$">$$$</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={ratingFloor} onValueChange={setRatingFloor}>
+                <SelectTrigger><SelectValue placeholder="Rating" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any Rating</SelectItem>
+                  <SelectItem value="4">4.0+</SelectItem>
+                  <SelectItem value="4.5">4.5+</SelectItem>
+                  <SelectItem value="4.8">4.8+</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input type="date" value={availabilityDate} onChange={(e) => setAvailabilityDate(e.target.value)} />
 
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger>
@@ -187,6 +224,10 @@ export default function VendorsPage() {
                   <SelectItem value="price">Lowest Price</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 p-3">
+              <p className="text-sm">Shortlist: {favorites.length} vendor(s)</p>
+              <Link href="/dashboard/vendors/compare"><Button size="sm">Compare Vendors</Button></Link>
             </div>
           </div>
         </CardContent>
@@ -288,7 +329,10 @@ function VendorCard({ vendor, isFavorite, onToggleFavorite }: any) {
           </div>
         </div>
 
-        <Button className="w-full bg-gradient-to-r from-fuchsia-600 to-violet-500 text-white">Public Preview</Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href={`/dashboard/vendors/${vendor.id}`}><Button className="w-full bg-gradient-to-r from-fuchsia-600 to-violet-500 text-white">View Profile</Button></Link>
+          <Button variant="outline" onClick={() => onToggleFavorite(vendor.id)}>{isFavorite ? 'Remove' : 'Shortlist'}</Button>
+        </div>
       </CardContent>
     </Card>
   );

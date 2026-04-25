@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const crypto = require('crypto');
 
 // Generate JWT Token
 const generateToken = (user) => {
@@ -30,21 +31,24 @@ exports.register = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'bride'
+      role: role || 'bride',
+      verificationToken: crypto.randomBytes(24).toString('hex')
     });
 
     await user.save();
 
     const token = generateToken(user);
     res.status(201).json({
-      message: 'User registered successfully',
+      message: 'User registered successfully. Verify your email to activate the account.',
       token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+        isVerified: user.isVerified
+      },
+      verificationToken: user.verificationToken
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -61,6 +65,14 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'User not found' });
     }
 
+    if (!user.isVerified) {
+      return res.status(403).json({
+        message: 'Please verify your email before logging in.',
+        code: 'EMAIL_NOT_VERIFIED',
+        email: user.email
+      });
+    }
+
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
@@ -74,7 +86,8 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        isVerified: user.isVerified
       }
     });
   } catch (error) {
@@ -95,4 +108,92 @@ exports.getCurrentUser = async (req, res) => {
 // Logout (client-side token deletion)
 exports.logout = (req, res) => {
   res.json({ message: 'Logout successful' });
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification link.' });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = null;
+    await user.save();
+
+    return res.json({ message: 'Email verified successfully. You can now log in.' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.isVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    user.verificationToken = crypto.randomBytes(24).toString('hex');
+    await user.save();
+
+    return res.json({
+      message: 'Verification email resent successfully.',
+      verificationToken: user.verificationToken
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this email.' });
+    }
+
+    const token = crypto.randomBytes(24).toString('hex');
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = new Date(Date.now() + 1000 * 60 * 30);
+    await user.save();
+
+    return res.json({
+      message: 'Password reset link generated.',
+      resetToken: token
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Reset link is invalid or expired.' });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    return res.json({ message: 'Password updated successfully.' });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 };
