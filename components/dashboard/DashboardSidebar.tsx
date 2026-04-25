@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, DollarSign, LayoutGrid, MessageCircle, Store, User, Users, WalletCards, CheckSquare, Heart, Mail } from 'lucide-react';
+import { Calendar, DollarSign, LayoutGrid, MessageCircle, Store, User, Users, WalletCards, CheckSquare, Heart, Mail, FileText, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -16,6 +16,9 @@ const menuItems = [
   { href: '/dashboard/invitation-studio', icon: Mail, label: 'Invitation Studio' },
   { href: '/dashboard/invitation-studio/editor', icon: Mail, label: 'Invitation Editor' },
   { href: '/dashboard/invitation-studio/send', icon: Mail, label: 'Send Invitations' },
+  { href: '/dashboard/inbox', icon: Inbox, label: 'Inbox' },
+  { href: '/dashboard/site-builder', icon: LayoutGrid, label: 'Site Builder' },
+  { href: '/dashboard/contracts', icon: FileText, label: 'Contracts' },
   { href: '/dashboard/guests', icon: Users, label: 'Guest Management' },
   { href: '/dashboard/guests/add', icon: Users, label: 'Add / Edit Guest' },
   { href: '/dashboard/guests/rsvp', icon: CheckSquare, label: 'RSVP Tracker' },
