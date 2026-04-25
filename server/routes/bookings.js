@@ -1,22 +1,15 @@
 const express = require('express');
 const { verifyToken } = require('../middleware/auth');
+const bookingController = require('../controllers/bookingController');
 
 const router = express.Router();
 
-router.get('/wedding/:weddingId', verifyToken, (req, res) => {
-  res.json({ message: 'Get wedding bookings endpoint' });
-});
+router.get('/wedding/:weddingId', verifyToken, bookingController.getWeddingBookings);
 
-router.post('/', verifyToken, (req, res) => {
-  res.json({ message: 'Create booking endpoint' });
-});
+router.post('/', verifyToken, bookingController.createBooking);
 
-router.put('/:id', verifyToken, (req, res) => {
-  res.json({ message: 'Update booking endpoint' });
-});
+router.put('/:id', verifyToken, bookingController.updateBooking);
 
-router.get('/:id', verifyToken, (req, res) => {
-  res.json({ message: 'Get booking details endpoint' });
-});
+router.get('/:id', verifyToken, bookingController.getBookingDetails);
 
 module.exports = router;

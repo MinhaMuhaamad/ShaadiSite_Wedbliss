@@ -66,8 +66,8 @@ export default function RegisterPage() {
         return;
       }
 
-      localStorage.setItem('registeredEmail', formData.email);
-      router.push('/auth/verify-email');
+      // Redirect to login page
+      router.push('/auth/login');
     } catch (err) {
       setError('Connection error. Is the server running?');
     } finally {

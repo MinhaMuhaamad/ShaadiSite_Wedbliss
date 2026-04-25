@@ -155,12 +155,7 @@ export default function LoginPage() {
                 Sign up
               </Link>
             </p>
-            <p className="mt-1 text-center text-xs text-fuchsia-700/85">
-              Waiting for activation?{' '}
-              <Link href="/auth/verify-email" className="font-semibold text-fuchsia-900 hover:underline">
-                Verify email
-              </Link>
-            </p>
+
             <p className="mt-2 text-center text-xs text-fuchsia-700/85">
               Platform manager?{' '}
               <Link href="/auth/admin-login" className="font-semibold text-fuchsia-900 hover:underline">

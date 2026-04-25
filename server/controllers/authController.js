@@ -32,14 +32,14 @@ exports.register = async (req, res) => {
       email,
       password,
       role: role || 'bride',
-      verificationToken: crypto.randomBytes(24).toString('hex')
+      isVerified: true
     });
 
     await user.save();
 
     const token = generateToken(user);
     res.status(201).json({
-      message: 'User registered successfully. Verify your email to activate the account.',
+      message: 'User registered successfully. Please log in to continue.',
       token,
       user: {
         id: user._id,
@@ -47,8 +47,7 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified
-      },
-      verificationToken: user.verificationToken
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -63,14 +62,6 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'User not found' });
-    }
-
-    if (!user.isVerified) {
-      return res.status(403).json({
-        message: 'Please verify your email before logging in.',
-        code: 'EMAIL_NOT_VERIFIED',
-        email: user.email
-      });
     }
 
     const isMatch = await user.comparePassword(password);
