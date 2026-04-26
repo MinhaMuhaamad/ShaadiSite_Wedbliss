@@ -1,0 +1,239 @@
+================================================================================
+                    ROLE-BASED ACCESS CONTROL - FILES TO COPY
+                              10 FILES TOTAL
+================================================================================
+
+PROJECT STRUCTURE AFTER CHANGES:
+================================
+
+app/
+├── auth/
+│   ├── login/
+│   │   └── page.tsx                    [MODIFIED] ✓
+│   ├── register/
+│   │   └── page.tsx                    [MODIFIED] ✓
+│   ├── admin-login/
+│   │   └── page.tsx                    [MODIFIED] ✓
+│   └── ...
+├── dashboard/
+│   ├── layout.tsx                      [MODIFIED] ✓
+│   ├── page.tsx
+│   └── ...
+├── admin/
+│   ├── layout.tsx                      [MODIFIED] ✓
+│   ├── dashboard/
+│   │   └── page.tsx
+│   └── ...
+├── vendor/                             [NEW FOLDER]
+│   ├── layout.tsx                      [NEW] ✓
+│   ├── dashboard/
+│   │   └── page.tsx                    [NEW] ✓
+│   └── ...
+└── ...
+
+lib/
+└── context/
+    └── AuthContext.tsx                 [MODIFIED] ✓
+
+server/
+└── models/
+    └── User.js                         [MODIFIED] ✓
+└── controllers/
+    └── authController.js               [MODIFIED] ✓
+
+================================================================================
+
+                         EXACT FILES TO COPY/UPDATE
+                            (10 FILES LISTED)
+
+================================================================================
+
+FILE #1: AuthContext.tsx
+─────────────────────────────────────────────────────────────────────────────
+Path:    lib/context/AuthContext.tsx
+Status:  MODIFIED - Copy Entire File
+Size:    ~85 lines
+Reason:  Added role typing and getRedirectPath() function
+Action:  Copy complete file content
+
+
+FILE #2: Login Page
+─────────────────────────────────────────────────────────────────────────────
+Path:    app/auth/login/page.tsx
+Status:  MODIFIED - Copy Entire File
+Size:    ~70 lines
+Reason:  Fixed redirect issue + added context integration
+Action:  Copy complete file content
+
+
+FILE #3: Register Page
+─────────────────────────────────────────────────────────────────────────────
+Path:    app/auth/register/page.tsx
+Status:  MODIFIED - Partial Update Required
+Size:    ~200 lines total (only ~20 lines change)
+Reason:  Updated role selection options
+Action:  Update the role selection section with new options:
+         - Bride
+         - Groom
+         - Family Member
+         - Service Provider
+
+
+FILE #4: Dashboard Layout
+─────────────────────────────────────────────────────────────────────────────
+Path:    app/dashboard/layout.tsx
+Status:  MODIFIED - Copy Entire File
+Size:    ~60 lines
+Reason:  Added comprehensive role-based access control
+Action:  Copy complete file content
+
+
+FILE #5: Admin Layout
+─────────────────────────────────────────────────────────────────────────────
+Path:    app/admin/layout.tsx
+Status:  MODIFIED - Copy Entire File
+Size:    ~45 lines
+Reason:  Enhanced admin dashboard protection with redirects
+Action:  Copy complete file content
+
+
+FILE #6: Admin Login Page
+─────────────────────────────────────────────────────────────────────────────
+Path:    app/auth/admin-login/page.tsx
+Status:  MODIFIED - Copy Entire File
+Size:    ~95 lines
+Reason:  Added hardcoded admin credentials + context integration
+Admin:   admin@wedbliss.com / AdminWedBliss2024!
+Action:  Copy complete file content
+
+
+FILE #7: Vendor Layout (NEW)
+─────────────────────────────────────────────────────────────────────────────
+Path:    app/vendor/layout.tsx
+Status:  NEW FILE - Create from scratch
+Size:    ~45 lines
+Reason:  Protects /vendor/* routes for vendors only
+Action:  Create new file with provided content
+
+
+FILE #8: Vendor Dashboard (NEW)
+─────────────────────────────────────────────────────────────────────────────
+Path:    app/vendor/dashboard/page.tsx
+Status:  NEW FILE - Create from scratch
+Size:    ~150 lines
+Reason:  Service provider dashboard with booking/revenue metrics
+Action:  Create new file with provided content
+
+
+FILE #9: User Model
+─────────────────────────────────────────────────────────────────────────────
+Path:    server/models/User.js
+Status:  MODIFIED - Partial Update Required
+Size:    ~100 lines total (only ~20 lines change)
+Reason:  Updated role enum + added vendorDetails schema
+Action:  Update role enum to include 'groom'
+         Add vendorDetails object with business info fields
+
+
+FILE #10: Auth Controller
+─────────────────────────────────────────────────────────────────────────────
+Path:    server/controllers/authController.js
+Status:  MODIFIED - Partial Update Required
+Size:    ~200 lines total (only ~4 lines change)
+Reason:  Added redirectUrl to API responses
+Action:  Add redirectUrl field to:
+         1. Register endpoint response (~line 50)
+         2. Login endpoint response (~line 83)
+
+================================================================================
+
+                         QUICK REFERENCE CHECKLIST
+
+================================================================================
+
+FRONTEND FILES (8 total):
+  ☐ 1. lib/context/AuthContext.tsx                    [COPY ENTIRE]
+  ☐ 2. app/auth/login/page.tsx                        [COPY ENTIRE]
+  ☐ 3. app/auth/register/page.tsx                     [UPDATE ROLE SECTION]
+  ☐ 4. app/dashboard/layout.tsx                       [COPY ENTIRE]
+  ☐ 5. app/admin/layout.tsx                           [COPY ENTIRE]
+  ☐ 6. app/auth/admin-login/page.tsx                  [COPY ENTIRE]
+  ☐ 7. app/vendor/layout.tsx                          [CREATE NEW]
+  ☐ 8. app/vendor/dashboard/page.tsx                  [CREATE NEW]
+
+BACKEND FILES (2 total):
+  ☐ 9. server/models/User.js                          [UPDATE ROLE & ADD SCHEMA]
+  ☐ 10. server/controllers/authController.js          [ADD redirectUrl FIELDS]
+
+================================================================================
+
+                           ADMIN CREDENTIALS
+
+================================================================================
+
+Email:    admin@wedbliss.com
+Password: AdminWedBliss2024!
+
+These are hardcoded in app/auth/admin-login/page.tsx
+Keep these credentials secure!
+
+================================================================================
+
+                            USER ROLE ENUM
+
+================================================================================
+
+Valid roles:
+  - 'bride'
+  - 'groom'
+  - 'family'
+  - 'vendor'
+  - 'admin'
+
+Default role: 'bride'
+
+================================================================================
+
+                           REDIRECT MAPPING
+
+================================================================================
+
+After Login:
+  bride/groom/family  →  /dashboard
+  vendor              →  /vendor/dashboard
+  admin               →  /admin/dashboard
+
+Route Protection:
+  /dashboard          →  Only bride/groom/family can access
+  /vendor/dashboard   →  Only vendor can access
+  /admin/dashboard    →  Only admin can access
+
+================================================================================
+
+                              DEPLOYMENT
+
+================================================================================
+
+1. Copy all 10 files according to instructions above
+2. Ensure database schema supports new vendorDetails
+3. Ensure JWT_SECRET environment variable is set
+4. Test all user roles and redirects
+5. Verify admin hardcoded login works
+6. Clear browser cache/localStorage before testing
+
+No additional npm packages needed!
+
+================================================================================
+
+                            SUPPORT & DOCS
+
+================================================================================
+
+For detailed information, see:
+  - IMPLEMENTATION_SUMMARY.md    (Complete overview)
+  - ROLE_BASED_ACCESS_CHANGES.md (Detailed changes)
+  - COPY_INSTRUCTIONS.md         (Step-by-step guide)
+
+Questions? Review the documentation files for comprehensive guides.
+
+================================================================================

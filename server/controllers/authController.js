@@ -47,7 +47,8 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified
-      }
+      },
+      redirectUrl: user.role === 'vendor' ? '/vendor/dashboard' : '/dashboard'
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -79,7 +80,8 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified
-      }
+      },
+      redirectUrl: user.role === 'admin' ? '/admin/dashboard' : user.role === 'vendor' ? '/vendor/dashboard' : '/dashboard'
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

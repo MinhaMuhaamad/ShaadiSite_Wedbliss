@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-export default function AdminLayout({
+export default function VendorLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -14,17 +14,17 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (!loading) {
-      // Not authenticated - redirect to admin login
+      // Not authenticated - redirect to login
       if (!token) {
-        router.push('/auth/admin-login');
+        router.push('/auth/login');
         return;
       }
 
-      // Only admin users can access admin dashboard
-      if (user?.role !== 'admin') {
-        // Redirect non-admin users based on their role
-        if (user?.role === 'vendor') {
-          router.push('/vendor/dashboard');
+      // Only vendor users can access vendor dashboard
+      if (user?.role !== 'vendor') {
+        // Redirect non-vendor users based on their role
+        if (user?.role === 'admin') {
+          router.push('/admin/dashboard');
         } else {
           router.push('/dashboard');
         }
@@ -40,10 +40,9 @@ export default function AdminLayout({
     );
   }
 
-  if (!token || user?.role !== 'admin') {
+  if (!token || user?.role !== 'vendor') {
     return null;
   }
 
   return <>{children}</>;
 }
-

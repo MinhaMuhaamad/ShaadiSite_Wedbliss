@@ -11,14 +11,35 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { token, loading } = useAuth();
+  const { token, user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !token) {
-      router.push('/auth/login');
+    if (!loading) {
+      // Not authenticated - redirect to login
+      if (!token) {
+        router.push('/auth/login');
+        return;
+      }
+
+      // Admin users should use admin dashboard
+      if (user?.role === 'admin') {
+        router.push('/admin/dashboard');
+        return;
+      }
+
+      // Vendor users should use vendor dashboard
+      if (user?.role === 'vendor') {
+        router.push('/vendor/dashboard');
+        return;
+      }
+
+      // Allow bride, groom, family to access this dashboard
+      if (user?.role && !['bride', 'groom', 'family'].includes(user.role)) {
+        router.push('/auth/login');
+      }
     }
-  }, [token, loading, router]);
+  }, [token, user, loading, router]);
 
   if (loading) {
     return (
@@ -28,7 +49,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (!token) {
+  if (!token || !user || !['bride', 'groom', 'family'].includes(user.role)) {
     return null;
   }
 
