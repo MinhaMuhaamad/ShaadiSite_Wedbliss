@@ -1,55 +1,49 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Users, Heart, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/context/AuthContext';
+import {
+  Users,
+  Heart,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Activity,
+  Settings,
+  Bell,
+  Plus,
+  ArrowRight,
+  BarChart3,
+  Eye,
+  Zap
+} from 'lucide-react';
 
-const ADMIN_STATS = {
-  totalUsers: 1247,
-  totalWeddings: 523,
-  totalVendors: 156,
-  totalRevenue: 125650,
-  activeUsers: 342,
-  vendorApplications: 18,
-  supportTickets: 24
-};
+interface DashboardStats {
+  totalUsers: number;
+  totalVendors: number;
+  totalBookings: number;
+  totalRevenue: number;
+  platformGrowth: number;
+  vendorApprovals: number;
+  activeUsers: number;
+  conversionRate: number;
+}
 
-const WEDDINGS_BY_MONTH = [
-  { month: 'Jan', weddings: 32, revenue: 8500 },
-  { month: 'Feb', weddings: 45, revenue: 12000 },
-  { month: 'Mar', weddings: 38, revenue: 10500 },
-  { month: 'Apr', weddings: 52, revenue: 14200 },
-  { month: 'May', weddings: 48, revenue: 13800 },
-  { month: 'Jun', weddings: 61, revenue: 16500 },
-  { month: 'Jul', weddings: 58, revenue: 15800 },
-  { month: 'Aug', weddings: 67, revenue: 18200 },
-];
-
-const VENDOR_CATEGORIES = [
-  { name: 'Photography', value: 35, fill: '#d4896b' },
-  { name: 'Catering', value: 28, fill: '#e8b4a8' },
-  { name: 'Venue', value: 22, fill: '#d4a5a5' },
-  { name: 'Florist', value: 18, fill: '#c9989e' },
-  { name: 'DJ/Music', value: 15, fill: '#b88b97' },
-  { name: 'Other', value: 38, fill: '#997189' },
-];
-
-const ACTIVE_WEDDINGS = [
-  { id: 1, couple: 'Sarah & John', date: '2024-06-15', status: 'Planning', progress: 75 },
-  { id: 2, couple: 'Emma & Mike', date: '2024-07-20', status: 'In Progress', progress: 90 },
-  { id: 3, couple: 'Jessica & Tom', date: '2024-08-10', status: 'Planning', progress: 60 },
-  { id: 4, couple: 'Lisa & David', date: '2024-09-05', status: 'Planning', progress: 45 },
-  { id: 5, couple: 'Rachel & Chris', date: '2024-10-12', status: 'In Progress', progress: 85 },
-];
-
-const RECENT_SIGNUPS = [
-  { id: 1, name: 'Amanda Wilson', type: 'Bride', date: '2 hours ago' },
-  { id: 2, name: 'Photography Studio', type: 'Vendor', date: '5 hours ago' },
-  { id: 3, name: 'Michael Johnson', type: 'Groom', date: '1 day ago' },
-  { id: 4, name: 'Elegant Catering', type: 'Vendor', date: '2 days ago' },
-  { id: 5, name: 'Nicole Brooks', type: 'Bride', date: '2 days ago' },
-];
+interface PendingVendor {
+  id: string;
+  name: string;
+  type: string;
+  appliedDate: string;
+  email: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
 
 export default function AdminDashboard() {
   return (
