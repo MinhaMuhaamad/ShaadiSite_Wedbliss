@@ -18,8 +18,22 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['bride', 'family', 'vendor', 'admin'],
+    enum: ['bride', 'groom', 'family', 'vendor', 'admin'],
     default: 'bride'
+  },
+  vendorDetails: {
+    businessName: String,
+    businessType: {
+      type: String,
+      enum: ['photographer', 'caterer', 'decorator', 'dj', 'makeup_artist', 'venue_manager', 'other']
+    },
+    phone: String,
+    website: String,
+    portfolio: String,
+    verified: {
+      type: Boolean,
+      default: false
+    }
   },
   profile: {
     phone: String,
