@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { setUser, setToken } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +37,19 @@ export default function LoginPage() {
         return;
       }
 
-      // Save token to localStorage
+      // Save token and user to localStorage and context
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Update context
+      setToken(data.token);
+      setUser(data.user);
 
+      // Role-based redirect
       if (data.user?.role === 'admin') {
         router.push('/admin/dashboard');
+      } else if (data.user?.role === 'vendor') {
+        router.push('/vendor/dashboard');
       } else {
         router.push('/dashboard');
       }
