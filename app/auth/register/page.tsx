@@ -113,15 +113,16 @@ export default function RegisterPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role" className="text-fuchsia-900">Role</Label>
+                  <Label htmlFor="role" className="text-fuchsia-900">I am a</Label>
                   <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                     <SelectTrigger disabled={loading} className="h-11 rounded-xl border-fuchsia-200 bg-white/90 focus:ring-fuchsia-400">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="bride">Bride/Groom</SelectItem>
-                      <SelectItem value="family">Family</SelectItem>
-                      <SelectItem value="vendor">Vendor</SelectItem>
+                      <SelectItem value="bride">Bride</SelectItem>
+                      <SelectItem value="groom">Groom</SelectItem>
+                      <SelectItem value="family">Family Member</SelectItem>
+                      <SelectItem value="vendor">Service Provider</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
