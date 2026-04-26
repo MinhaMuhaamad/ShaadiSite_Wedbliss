@@ -3,10 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShieldCheck, Sparkles } from 'lucide-react';
+
+// Hardcoded Admin Credentials
+const ADMIN_EMAIL = 'admin@wedbliss.com';
+const ADMIN_PASSWORD = 'AdminWedBliss2024!';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -14,6 +19,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { setUser, setToken } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +27,27 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
+      // Check hardcoded credentials first
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        const adminUser = {
+          id: 'admin-001',
+          name: 'Platform Admin',
+          email: ADMIN_EMAIL,
+          role: 'admin' as const,
+          isVerified: true
+        };
+
+        const mockToken = 'admin-token-' + Date.now();
+        localStorage.setItem('token', mockToken);
+        localStorage.setItem('user', JSON.stringify(adminUser));
+        
+        setToken(mockToken);
+        setUser(adminUser);
+        router.push('/admin/dashboard');
+        return;
+      }
+
+      // Fallback to API login for registered admins
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
@@ -41,6 +68,10 @@ export default function AdminLoginPage() {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      setToken(data.token);
+      setUser(data.user);
+      
       router.push('/admin/dashboard');
     } catch (_err) {
       setError('Connection error. Is the server running?');
