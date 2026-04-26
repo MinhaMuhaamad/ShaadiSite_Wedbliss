@@ -154,6 +154,32 @@ export default function VendorDashboard() {
     conversionRate: 16.7
   });
 
+  const [budget, setBudget] = useState<number | null>(null);
+  const [budgetInput, setBudgetInput] = useState('');
+  const [budgetMessage, setBudgetMessage] = useState('');
+
+  const totalBookingValue = bookings.reduce((sum, b) => sum + b.amount, 0);
+  const budgetRemaining = budget !== null ? Math.max(0, budget - totalBookingValue) : 0;
+  const budgetUsedPct = budget !== null ? Math.min(100, Math.round((totalBookingValue / budget) * 100)) : 0;
+
+  const handleBudgetSave = () => {
+    const value = Number(budgetInput);
+    if (!value || value <= 0) {
+      setBudgetMessage('Please enter a valid budget amount.');
+      return;
+    }
+    setBudget(value);
+    setBudgetMessage(`Budget set to ₹${value.toLocaleString()}`);
+    localStorage.setItem('vendorBudget', value.toString());
+  };
+
+  useEffect(() => {
+    const savedBudget = typeof window !== 'undefined' ? localStorage.getItem('vendorBudget') : null;
+    if (savedBudget) {
+      setBudget(Number(savedBudget));
+    }
+  }, []);
+
   // Real-time updates simulation
   useEffect(() => {
     const interval = setInterval(() => {
@@ -212,6 +238,53 @@ export default function VendorDashboard() {
       </div>
 
       <div className="p-6 md:p-8 space-y-8">
+        {/* Budget Setup */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-3 border-0 shadow-lg">
+            <CardHeader className="border-b border-input-border pb-4">
+              <CardTitle className="text-xl">Client Budget</CardTitle>
+              <CardDescription>Set your client’s expected budget so all booking insights reflect it.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="flex-1 min-w-[220px]">
+                  <label className="text-sm font-medium text-foreground">Budget amount (INR)</label>
+                  <input
+                    type="number"
+                    value={budgetInput}
+                    onChange={(event) => setBudgetInput(event.target.value)}
+                    placeholder="Enter your budget"
+                    className="mt-2 w-full rounded-2xl border border-input bg-background px-3 py-3 text-sm outline-none focus:border-[#D62985]"
+                  />
+                </div>
+                <Button className="min-w-[140px] bg-gradient-to-r from-[#D62985] to-[#6043D6] text-white" onClick={handleBudgetSave}>
+                  Save Budget
+                </Button>
+              </div>
+              {budgetMessage && (
+                <p className="mt-4 text-sm text-foreground-secondary">{budgetMessage}</p>
+              )}
+              {budget !== null && (
+                <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-3xl border border-input bg-muted p-4">
+                    <p className="text-sm text-foreground-secondary">Budget</p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground">₹{budget.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-3xl border border-input bg-muted p-4">
+                    <p className="text-sm text-foreground-secondary">Used by Bookings</p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground">₹{totalBookingValue.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-3xl border border-input bg-muted p-4">
+                    <p className="text-sm text-foreground-secondary">Remaining</p>
+                    <p className="mt-2 text-2xl font-semibold text-foreground">₹{budgetRemaining.toLocaleString()}</p>
+                    <p className="mt-2 text-sm text-foreground-secondary">{budgetUsedPct}% used</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Key Stats Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {/* Active Bookings */}
@@ -369,6 +442,13 @@ export default function VendorDashboard() {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-foreground">₹{(booking.amount / 1000).toFixed(0)}K</p>
+                          {budget !== null ? (
+                            <p className="text-xs text-foreground-secondary mt-1">
+                              This booking uses {Math.round((booking.amount / budget) * 100)}% of budget
+                            </p>
+                          ) : (
+                            <p className="text-xs text-foreground-secondary mt-1">Enter a budget to compare bookings.</p>
+                          )}
                           {booking.advance > 0 && (
                             <p className="text-sm text-green-600 font-semibold">Advanced: ₹{(booking.advance / 1000).toFixed(0)}K</p>
                           )}
