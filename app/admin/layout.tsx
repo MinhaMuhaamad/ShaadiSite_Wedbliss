@@ -13,8 +13,22 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && (!token || user?.role !== 'admin')) {
-      router.push('/auth/admin-login');
+    if (!loading) {
+      // Not authenticated - redirect to admin login
+      if (!token) {
+        router.push('/auth/admin-login');
+        return;
+      }
+
+      // Only admin users can access admin dashboard
+      if (user?.role !== 'admin') {
+        // Redirect non-admin users based on their role
+        if (user?.role === 'vendor') {
+          router.push('/vendor/dashboard');
+        } else {
+          router.push('/dashboard');
+        }
+      }
     }
   }, [user, token, loading, router]);
 
