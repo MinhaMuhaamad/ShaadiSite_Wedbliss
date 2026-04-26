@@ -6,7 +6,8 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: 'bride' | 'groom' | 'family' | 'vendor' | 'admin';
+  isVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -16,6 +17,7 @@ interface AuthContextType {
   logout: () => void;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
+  getRedirectPath: () => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +40,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
+  const getRedirectPath = (): string => {
+    if (!user) return '/auth/login';
+    
+    switch (user.role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'vendor':
+        return '/vendor/dashboard';
+      case 'bride':
+      case 'groom':
+      case 'family':
+        return '/dashboard';
+      default:
+        return '/dashboard';
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -46,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, logout, setUser, setToken }}>
+    <AuthContext.Provider value={{ user, token, loading, logout, setUser, setToken, getRedirectPath }}>
       {children}
     </AuthContext.Provider>
   );
