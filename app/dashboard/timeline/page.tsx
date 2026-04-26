@@ -1,54 +1,111 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Clock, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/lib/context/AuthContext';
+import { apiRequest, getActiveWeddingId } from '@/lib/dashboard-api';
 
-const MOCK_TIMELINE = [
-  { id: 1, time: '08:00 AM', event: 'Bridal Party Arrives', vendor: 'Makeup Team', notes: 'Bridal suite', duration: '2 hours' },
-  { id: 2, time: '10:00 AM', event: 'Hair & Makeup', vendor: 'Glam & Glamour', notes: 'Bride and bridesmaids', duration: '1.5 hours' },
-  { id: 3, time: '11:30 AM', event: 'Photos - Getting Ready', vendor: 'Moments Photography', notes: 'Capture preparation', duration: '1 hour' },
-  { id: 4, time: '12:30 PM', event: 'Groom Preparation', vendor: 'Self', notes: 'Groom and groomsmen ready', duration: '1 hour' },
-  { id: 5, time: '01:00 PM', event: 'First Look', vendor: 'Moments Photography', notes: 'Garden behind venue', duration: '30 mins' },
-  { id: 6, time: '01:30 PM', event: 'Family Photos', vendor: 'Moments Photography', notes: 'Before ceremony', duration: '45 mins' },
-  { id: 7, time: '02:15 PM', event: 'Guests Arrive', vendor: 'Venue Staff', notes: 'Reception hall opens', duration: '30 mins' },
-  { id: 8, time: '02:45 PM', event: 'Ceremony Begins', vendor: 'Officiant', notes: 'Main hall', duration: '30 mins' },
-  { id: 9, time: '03:15 PM', event: 'Cocktail Hour', vendor: 'Catering', notes: 'Garden area', duration: '1 hour' },
-  { id: 10, time: '04:15 PM', event: 'Reception Begins', vendor: 'Spin City DJ', notes: 'Dinner service starts', duration: '4 hours' },
-  { id: 11, time: '05:00 PM', event: 'First Dance', vendor: 'Spin City DJ', notes: 'Grand entrance', duration: '5 mins' },
-  { id: 12, time: '10:00 PM', event: 'Cake Cutting', vendor: 'Catering', notes: '', duration: '20 mins' },
-  { id: 13, time: '10:30 PM', event: 'Bouquet Toss', vendor: 'Spin City DJ', notes: 'Music announcement', duration: '15 mins' },
-  { id: 14, time: '11:00 PM', event: 'Last Dance', vendor: 'Spin City DJ', notes: 'Wind down', duration: '30 mins' },
-];
+type TimelineEvent = {
+  _id: string;
+  weddingId: string;
+  eventName: string;
+  eventType?: string;
+  startTime: string;
+  endTime?: string;
+  duration?: number;
+  location?: string;
+  notes?: string;
+  status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+};
 
 export default function TimelinePage() {
-  const [timelineEvents, setTimelineEvents] = useState(MOCK_TIMELINE);
+  const { token } = useAuth();
+  const [weddingId, setWeddingId] = useState<string | null>(null);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [newEvent, setNewEvent] = useState({
-    time: '',
-    event: '',
-    vendor: '',
+    startTime: '',
+    endTime: '',
+    eventName: '',
+    location: '',
     notes: '',
-    duration: ''
+    eventType: 'other'
   });
 
-  const handleAddEvent = () => {
-    if (newEvent.time && newEvent.event) {
-      setTimelineEvents([...timelineEvents, { id: timelineEvents.length + 1, ...newEvent }]);
-      setShowAddEvent(false);
-      setNewEvent({ time: '', event: '', vendor: '', notes: '', duration: '' });
+  useEffect(() => {
+    if (!token) return;
+    const load = async () => {
+      try {
+        setError('');
+        const id = await getActiveWeddingId(token);
+        setWeddingId(id);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load wedding.');
+      }
+    };
+    load();
+  }, [token]);
+
+  const loadTimeline = async (id: string) => {
+    if (!token) return;
+    try {
+      setError('');
+      const events = await apiRequest<TimelineEvent[]>(`/api/timeline?weddingId=${id}`, token);
+      setTimelineEvents(events);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load timeline.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const sortedEvents = [...timelineEvents].sort((a, b) => {
-    const timeA = new Date(`2024-01-01 ${a.time}`);
-    const timeB = new Date(`2024-01-01 ${b.time}`);
-    return timeA - timeB;
-  });
+  useEffect(() => {
+    if (!weddingId) return;
+    setLoading(true);
+    void loadTimeline(weddingId);
+    const poll = setInterval(() => void loadTimeline(weddingId), 12000);
+    return () => clearInterval(poll);
+  }, [weddingId, token]);
+
+  const handleAddEvent = async () => {
+    if (!token) return setError('Please login to continue.');
+    if (!weddingId) return setError('Please create a wedding first.');
+    if (!newEvent.startTime || !newEvent.eventName.trim()) return;
+
+    try {
+      setError('');
+      await apiRequest('/api/timeline', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          weddingId,
+          eventName: newEvent.eventName.trim(),
+          eventType: newEvent.eventType,
+          startTime: new Date(newEvent.startTime).toISOString(),
+          endTime: newEvent.endTime ? new Date(newEvent.endTime).toISOString() : undefined,
+          location: newEvent.location || undefined,
+          notes: newEvent.notes || undefined
+        })
+      });
+
+      setShowAddEvent(false);
+      setNewEvent({ startTime: '', endTime: '', eventName: '', location: '', notes: '', eventType: 'other' });
+      await loadTimeline(weddingId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to add event.');
+    }
+  };
+
+  const sortedEvents = useMemo(
+    () => [...timelineEvents].sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime)),
+    [timelineEvents]
+  );
 
   return (
     <div className="space-y-6">
@@ -71,24 +128,25 @@ export default function TimelinePage() {
             </DialogHeader>
             <div className="space-y-4">
               <Input
-                type="time"
-                value={newEvent.time}
-                onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                type="datetime-local"
+                value={newEvent.startTime}
+                onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
               />
               <Input
                 placeholder="Event name"
-                value={newEvent.event}
-                onChange={(e) => setNewEvent({ ...newEvent, event: e.target.value })}
+                value={newEvent.eventName}
+                onChange={(e) => setNewEvent({ ...newEvent, eventName: e.target.value })}
               />
               <Input
-                placeholder="Vendor/Contact"
-                value={newEvent.vendor}
-                onChange={(e) => setNewEvent({ ...newEvent, vendor: e.target.value })}
+                placeholder="Location (optional)"
+                value={newEvent.location}
+                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
               />
               <Input
-                placeholder="Duration (e.g., 1 hour)"
-                value={newEvent.duration}
-                onChange={(e) => setNewEvent({ ...newEvent, duration: e.target.value })}
+                type="datetime-local"
+                placeholder="End time (optional)"
+                value={newEvent.endTime}
+                onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
               />
               <Input
                 placeholder="Notes (optional)"
@@ -101,6 +159,8 @@ export default function TimelinePage() {
         </Dialog>
       </div>
 
+      {error ? <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</p> : null}
+
       {/* Timeline Overview */}
       <Card>
         <CardHeader>
@@ -109,8 +169,9 @@ export default function TimelinePage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {loading ? <p className="text-sm text-muted-foreground">Loading timeline...</p> : null}
             {sortedEvents.map((event, idx) => (
-              <div key={event.id} className="relative">
+              <div key={event._id} className="relative">
                 {idx > 0 && <div className="absolute left-8 top-0 h-4 w-0.5 bg-primary/20 -translate-y-4" />}
                 <div className="flex gap-4">
                   <div className="flex flex-col items-center">
@@ -121,26 +182,23 @@ export default function TimelinePage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-semibold text-lg">{event.time}</span>
+                          <span className="font-semibold text-lg">
+                            {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
                         </div>
-                        <h3 className="text-lg font-semibold mt-1">{event.event}</h3>
-                        {event.vendor && (
+                        <h3 className="text-lg font-semibold mt-1">{event.eventName}</h3>
+                        {event.location ? (
                           <p className="text-sm text-muted-foreground mt-1">
-                            <strong>Vendor:</strong> {event.vendor}
+                            <strong>Location:</strong> {event.location}
                           </p>
-                        )}
-                        {event.duration && (
-                          <p className="text-sm text-muted-foreground">
-                            <strong>Duration:</strong> {event.duration}
-                          </p>
-                        )}
-                        {event.notes && (
+                        ) : null}
+                        {event.notes ? (
                           <p className="text-sm text-muted-foreground mt-1">
                             <strong>Notes:</strong> {event.notes}
                           </p>
-                        )}
+                        ) : null}
                       </div>
-                      <Badge variant="outline">{event.duration}</Badge>
+                      <Badge variant="outline">{event.status || 'pending'}</Badge>
                     </div>
                   </div>
                 </div>
@@ -157,8 +215,10 @@ export default function TimelinePage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">First Event</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{sortedEvents[0]?.time}</div>
-            <p className="text-xs text-muted-foreground mt-1">{sortedEvents[0]?.event}</p>
+            <div className="text-2xl font-bold">
+              {sortedEvents[0]?.startTime ? new Date(sortedEvents[0].startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{sortedEvents[0]?.eventName || '-'}</p>
           </CardContent>
         </Card>
 
@@ -176,8 +236,12 @@ export default function TimelinePage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Last Event</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{sortedEvents[sortedEvents.length - 1]?.time}</div>
-            <p className="text-xs text-muted-foreground mt-1">{sortedEvents[sortedEvents.length - 1]?.event}</p>
+            <div className="text-2xl font-bold">
+              {sortedEvents[sortedEvents.length - 1]?.startTime
+                ? new Date(sortedEvents[sortedEvents.length - 1].startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '-'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{sortedEvents[sortedEvents.length - 1]?.eventName || '-'}</p>
           </CardContent>
         </Card>
       </div>

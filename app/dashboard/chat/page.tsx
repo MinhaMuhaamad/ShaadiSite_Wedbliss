@@ -1,61 +1,56 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Send, Phone, Video } from 'lucide-react';
+import { io, Socket } from 'socket.io-client';
+import { useAuth } from '@/lib/context/AuthContext';
+import { API_BASE_URL, apiRequest } from '@/lib/dashboard-api';
+import { getActiveWeddingId } from '@/lib/dashboard-api';
 
-const MOCK_CONVERSATIONS = [
-  {
-    id: 1,
-    name: 'Wedding Planning Team',
-    type: 'group',
-    members: ['You', 'Mom', 'Maid of Honor', 'Groom'],
-    unread: 3,
-    lastMessage: 'Vendor confirmations sent!',
-    timestamp: '2 hours ago'
-  },
-  {
-    id: 2,
-    name: 'Mom',
-    type: 'direct',
-    unread: 0,
-    lastMessage: 'Can&apos;t wait for the wedding!',
-    timestamp: 'Yesterday'
-  },
-  {
-    id: 3,
-    name: 'The Grand Ballroom',
-    type: 'vendor',
-    unread: 1,
-    lastMessage: 'Final setup details confirmed',
-    timestamp: '1 hour ago'
-  },
-  {
-    id: 4,
-    name: 'Catering',
-    type: 'vendor',
-    unread: 0,
-    lastMessage: 'Menu finalized',
-    timestamp: '2 days ago'
-  }
-];
+type Conversation = {
+  _id: string;
+  conversationId: string;
+  name: string;
+  type: 'direct' | 'group' | 'vendor';
+  lastMessage: string;
+  updatedAt: string;
+  unread: number;
+};
 
-const MOCK_MESSAGES = [
-  { id: 1, sender: 'Mom', timestamp: '10:30 AM', message: 'How are the preparations going?', type: 'received' },
-  { id: 2, sender: 'You', timestamp: '10:32 AM', message: 'Everything is on track! Just confirmed with the venue.', type: 'sent' },
-  { id: 3, sender: 'Maid of Honor', timestamp: '10:45 AM', message: 'I&apos;ve sent reminders to all bridesmaids!', type: 'received' },
-  { id: 4, sender: 'You', timestamp: '10:50 AM', message: 'Thanks so much! You&apos;re the best.', type: 'sent' },
-  { id: 5, sender: 'Wedding Planning Team', timestamp: '11:00 AM', message: 'Vendor confirmations sent!', type: 'received' },
-];
+type ChatMessage = {
+  senderId: string;
+  text?: string;
+  mediaUrl?: string;
+  timestamp: string;
+  isRead: boolean;
+};
+
+type ChatThread = {
+  _id: string;
+  conversationId: string;
+  name?: string;
+  type: Conversation['type'];
+  messages: ChatMessage[];
+};
 
 export default function ChatPage() {
-  const [selectedConversation, setSelectedConversation] = useState(MOCK_CONVERSATIONS[0].id);
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const { token, user } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [thread, setThread] = useState<ChatThread | null>(null);
   const [messageInput, setMessageInput] = useState('');
+  const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
+
+  const selectedConversation = useMemo(
+    () => conversations.find((c) => c.conversationId === selectedConversationId) || null,
+    [conversations, selectedConversationId]
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -63,22 +58,121 @@ export default function ChatPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [thread?.messages?.length]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const load = async () => {
+      try {
+        setError('');
+        const rows = await apiRequest<Conversation[]>('/api/chat/conversations', token);
+        setConversations(rows);
+        if (!selectedConversationId && rows.length) {
+          setSelectedConversationId(rows[0].conversationId);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load conversations.');
+      }
+    };
+
+    load();
+  }, [token, selectedConversationId]);
+
+  useEffect(() => {
+    if (!token || !selectedConversationId) return;
+
+    const loadThread = async () => {
+      try {
+        setError('');
+        const chat = await apiRequest<ChatThread>(`/api/chat/conversation/${selectedConversationId}`, token);
+        setThread(chat);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unable to load conversation.');
+      }
+    };
+
+    loadThread();
+  }, [token, selectedConversationId]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const socket = io(API_BASE_URL, {
+      transports: ['websocket'],
+      reconnection: true
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      // no-op
+    });
+
+    socket.on('receive-message', (payload: { conversationId?: string; message?: ChatMessage }) => {
+      if (!payload?.conversationId || !payload?.message) return;
+      if (payload.conversationId !== selectedConversationId) return;
+
+      setThread((prev) => {
+        if (!prev) return prev;
+        const already = prev.messages.some(
+          (m) => m.timestamp === payload.message!.timestamp && m.senderId === payload.message!.senderId && m.text === payload.message!.text
+        );
+        if (already) return prev;
+        return { ...prev, messages: [...prev.messages, payload.message!] };
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [token, selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId || !socketRef.current) return;
+    socketRef.current.emit('join-chat', selectedConversationId);
+  }, [selectedConversationId]);
 
   const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      setMessages([...messages, {
-        id: messages.length + 1,
-        sender: 'You',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        message: messageInput,
-        type: 'sent'
-      }]);
-      setMessageInput('');
-    }
+    void sendMessage();
   };
 
-  const currentConversation = MOCK_CONVERSATIONS.find(c => c.id === selectedConversation);
+  const sendMessage = async () => {
+    if (!token) return setError('Please login to send messages.');
+    if (!selectedConversationId) return;
+    const text = messageInput.trim();
+    if (!text) return;
+
+    try {
+      setError('');
+      setMessageInput('');
+
+      const result = await apiRequest<{ chat: ChatThread }>('/api/chat/message', token, {
+        method: 'POST',
+        body: JSON.stringify({ conversationId: selectedConversationId, text })
+      });
+
+      const latest = result.chat?.messages?.[result.chat.messages.length - 1];
+      if (latest && socketRef.current) {
+        socketRef.current.emit('send-message', selectedConversationId, {
+          conversationId: selectedConversationId,
+          message: {
+            senderId: String(latest.senderId),
+            text: latest.text,
+            mediaUrl: latest.mediaUrl,
+            timestamp: new Date(latest.timestamp).toISOString(),
+            isRead: latest.isRead
+          } satisfies ChatMessage
+        });
+      }
+
+      // Re-sync thread from API to avoid drift
+      const updated = await apiRequest<ChatThread>(`/api/chat/conversation/${selectedConversationId}`, token);
+      setThread(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to send message.');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -86,6 +180,8 @@ export default function ChatPage() {
         <h1 className="text-3xl font-bold">Messaging</h1>
         <p className="text-muted-foreground mt-1">Chat with family, vendors, and your planning team</p>
       </div>
+
+      {error ? <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</p> : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Conversations List */}
@@ -95,12 +191,12 @@ export default function ChatPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="space-y-0">
-              {MOCK_CONVERSATIONS.map((conversation) => (
+              {conversations.map((conversation) => (
                 <button
-                  key={conversation.id}
-                  onClick={() => setSelectedConversation(conversation.id)}
+                  key={conversation.conversationId}
+                  onClick={() => setSelectedConversationId(conversation.conversationId)}
                   className={`w-full text-left px-4 py-3 border-b border-border hover:bg-muted transition-colors ${
-                    selectedConversation === conversation.id ? 'bg-muted border-l-2 border-l-primary' : ''
+                    selectedConversationId === conversation.conversationId ? 'bg-muted border-l-2 border-l-primary' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -114,9 +210,14 @@ export default function ChatPage() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">{conversation.timestamp}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {conversation.updatedAt ? new Date(conversation.updatedAt).toLocaleString() : ''}
+                  </p>
                 </button>
               ))}
+              {!conversations.length ? (
+                <div className="p-4 text-sm text-muted-foreground">No conversations yet.</div>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -126,9 +227,9 @@ export default function ChatPage() {
           <CardHeader className="border-b border-border">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>{currentConversation?.name}</CardTitle>
+                <CardTitle>{selectedConversation?.name || 'Conversation'}</CardTitle>
                 <CardDescription>
-                  {currentConversation?.type === 'group' && `${currentConversation.members?.length} members`}
+                  {selectedConversation?.type ? selectedConversation.type : ''}
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -147,28 +248,29 @@ export default function ChatPage() {
           <CardContent className="flex flex-col h-96">
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((msg) => (
+              {(thread?.messages || []).map((msg, idx) => {
+                const isMine = user?.id && String(msg.senderId) === String(user.id);
+                const label = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                return (
                 <div
-                  key={msg.id}
-                  className={`flex ${msg.type === 'sent' ? 'justify-end' : 'justify-start'}`}
+                  key={`${msg.timestamp}-${idx}`}
+                  className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`max-w-xs px-4 py-2 rounded-lg ${
-                      msg.type === 'sent'
+                      isMine
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground'
                     }`}
                   >
-                    {msg.type === 'received' && (
-                      <p className="text-xs font-semibold mb-1">{msg.sender}</p>
-                    )}
-                    <p className="text-sm">{msg.message}</p>
-                    <p className={`text-xs mt-1 ${msg.type === 'sent' ? 'opacity-75' : 'opacity-50'}`}>
-                      {msg.timestamp}
+                    <p className="text-sm">{msg.text || (msg.mediaUrl ? 'Media' : '')}</p>
+                    <p className={`text-xs mt-1 ${isMine ? 'opacity-75' : 'opacity-50'}`}>
+                      {label}
                     </p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 
@@ -178,7 +280,7 @@ export default function ChatPage() {
                 placeholder="Type a message..."
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 className="flex-1"
               />
               <Button onClick={handleSendMessage} className="gap-2">
