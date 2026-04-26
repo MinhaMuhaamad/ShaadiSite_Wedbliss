@@ -40,6 +40,7 @@ interface Booking {
   location: string;
   guestCount: number;
   advance: number;
+  relationship: string;
 }
 
 interface Message {
@@ -71,7 +72,8 @@ export default function VendorDashboard() {
       amount: 75000,
       location: 'New Delhi',
       guestCount: 450,
-      advance: 37500
+      advance: 37500,
+      relationship: 'bride_family'
     },
     {
       id: '2',
@@ -83,7 +85,8 @@ export default function VendorDashboard() {
       amount: 85000,
       location: 'Mumbai',
       guestCount: 500,
-      advance: 0
+      advance: 0,
+      relationship: 'friend'
     },
     {
       id: '3',
@@ -95,7 +98,8 @@ export default function VendorDashboard() {
       amount: 80000,
       location: 'Bangalore',
       guestCount: 400,
-      advance: 0
+      advance: 0,
+      relationship: 'colleague'
     },
     {
       id: '4',
@@ -107,10 +111,10 @@ export default function VendorDashboard() {
       amount: 75000,
       location: 'Pune',
       guestCount: 350,
-      advance: 75000
+      advance: 75000,
+      relationship: 'other'
     }
   ]);
-
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -570,3 +574,4 @@ export default function VendorDashboard() {
     </div>
   );
 }
+
