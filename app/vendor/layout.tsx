@@ -3,6 +3,8 @@
 import { useAuth } from '@/lib/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import VendorSidebar from '@/components/vendor/VendorSidebar';
+import VendorNavigation from '@/components/vendor/VendorNavigation';
 
 export default function VendorLayout({
   children,
@@ -44,5 +46,15 @@ export default function VendorLayout({
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-screen bg-gradient-to-b from-primary/5 via-background to-background">
+      <VendorSidebar />
+      <div className="flex flex-1 flex-col">
+        <VendorNavigation />
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
 }
