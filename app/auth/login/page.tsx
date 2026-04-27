@@ -146,18 +146,6 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="my-5 flex items-center gap-3 text-xs text-fuchsia-700/70">
-              <div className="h-px flex-1 bg-fuchsia-200" />
-              OR CONTINUE WITH
-              <div className="h-px flex-1 bg-fuchsia-200" />
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <button type="button" className="rounded-xl border border-fuchsia-200 bg-white py-2.5 text-sm font-medium text-fuchsia-800 hover:bg-fuchsia-50">G</button>
-              <button type="button" className="rounded-xl border border-fuchsia-200 bg-white py-2.5 text-sm font-medium text-fuchsia-800 hover:bg-fuchsia-50">in</button>
-              <button type="button" className="rounded-xl border border-fuchsia-200 bg-white py-2.5 text-sm font-medium text-fuchsia-800 hover:bg-fuchsia-50">f</button>
-            </div>
-
             <p className="mt-6 text-center text-sm text-fuchsia-700/85">
               Don&apos;t have an account?{' '}
               <Link href="/auth/register" className="font-semibold text-fuchsia-900 hover:underline">

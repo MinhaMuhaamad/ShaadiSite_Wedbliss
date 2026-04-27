@@ -73,7 +73,9 @@ export default function PlannerCalendarPage() {
   }, [selectedEntity, tasks, user]);
 
   const daily = useMemo(
-    () => filteredTasks.filter((task) => task.startTime.slice(0, 10) === selectedDate),
+    () => filteredTasks
+      .filter((task) => task.startTime.slice(0, 10) === selectedDate)
+      .sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime)),
     [filteredTasks, selectedDate]
   );
 
@@ -118,7 +120,12 @@ export default function PlannerCalendarPage() {
             <div className="mt-4 space-y-2">
               {filteredTasks.slice(0, 10).map((task) => (
                 <div key={task._id} className="rounded-lg border border-fuchsia-100 px-3 py-2 text-sm">
-                  <span className="font-medium">{task.startTime.slice(0, 10)}</span> • {task.eventName}
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-medium">Deadline:</span>
+                    <span>{new Date(task.startTime).toLocaleDateString()}</span>
+                    <span>{new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <p className="mt-1 font-medium">{task.eventName}</p>
                 </div>
               ))}
             </div>
@@ -132,7 +139,7 @@ export default function PlannerCalendarPage() {
               {daily.map((task) => (
                 <div key={task._id} className="rounded-lg border border-fuchsia-100 p-2 text-sm">
                   <p className="font-medium">{task.eventName}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(task.startTime).toLocaleTimeString()}</p>
+                  <p className="text-xs text-muted-foreground">Deadline: {new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               ))}
               {!daily.length ? <p className="text-sm text-muted-foreground">No tasks for selected date.</p> : null}

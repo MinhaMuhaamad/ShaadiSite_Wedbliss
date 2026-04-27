@@ -21,6 +21,7 @@ export default function ChecklistPage() {
   const { token } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [taskName, setTaskName] = useState('');
+  const [taskDeadline, setTaskDeadline] = useState(() => new Date().toISOString().slice(0, 16));
   const [error, setError] = useState('');
 
   const load = async () => {
@@ -59,12 +60,13 @@ export default function ChecklistPage() {
         body: JSON.stringify({
           weddingId,
           eventName: taskName,
-          startTime: new Date().toISOString(),
+          startTime: new Date(taskDeadline).toISOString(),
           status: 'pending',
           eventType: 'other'
         })
       });
       setTaskName('');
+      setTaskDeadline(new Date().toISOString().slice(0, 16));
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to add task.');
@@ -98,8 +100,14 @@ export default function ChecklistPage() {
 
       {error ? <p className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</p> : null}
 
-      <form onSubmit={addTask} className="flex gap-2">
+      <form onSubmit={addTask} className="grid gap-2 md:grid-cols-[1fr_240px_auto]">
         <Input value={taskName} onChange={(event) => setTaskName(event.target.value)} placeholder="Add task..." />
+        <Input
+          type="datetime-local"
+          value={taskDeadline}
+          onChange={(event) => setTaskDeadline(event.target.value)}
+          className="min-w-0"
+        />
         <Button type="submit">Add Task</Button>
       </form>
 
@@ -107,10 +115,10 @@ export default function ChecklistPage() {
         <CardHeader><CardTitle>Task List</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {tasks.map((task) => (
-            <div key={task._id} className="flex items-center justify-between rounded-xl border border-fuchsia-100 p-3">
+            <div key={task._id} className="flex flex-col gap-3 rounded-xl border border-fuchsia-100 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className={`font-medium ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>{task.eventName}</p>
-                <p className="text-xs text-muted-foreground">{new Date(task.startTime).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Deadline: {new Date(task.startTime).toLocaleString()}</p>
               </div>
               <Button size="sm" variant={task.status === 'completed' ? 'outline' : 'default'} onClick={() => toggleTask(task)}>
                 {task.status === 'completed' ? 'Reopen' : 'Mark Done'}
