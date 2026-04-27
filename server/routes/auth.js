@@ -12,12 +12,10 @@ const registerValidation = [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('role').isIn(['bride', 'groom', 'family', 'vendor', 'admin']).withMessage('Invalid role')
 ];
-
 const loginValidation = [
   body('email').isEmail().withMessage('Invalid email'),
   body('password').notEmpty().withMessage('Password is required')
 ];
-
 // Routes
 router.post('/register', registerValidation, authController.register);
 router.post('/login', loginValidation, authController.login);

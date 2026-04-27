@@ -43,7 +43,10 @@ export default function ProfilePage() {
     name: '',
     wedding_date: '',
     venue: '',
-    groomName: ''
+    groomName: '',
+    phone: '',
+    bio: '',
+    guest_count: 0
   });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -71,7 +74,10 @@ export default function ProfilePage() {
         name: userData.name,
         wedding_date: userData.profile?.wedding_date || (activeWedding?.weddingDate ? activeWedding.weddingDate.slice(0, 10) : ''),
         venue: userData.profile?.venue || '',
-        groomName: activeWedding?.groomName || ''
+        groomName: activeWedding?.groomName || '',
+        phone: userData.profile?.phone || '',
+        bio: userData.profile?.bio || '',
+        guest_count: userData.profile?.guest_count || 0
       });
     } finally {
       setLoading(false);
@@ -88,6 +94,33 @@ export default function ProfilePage() {
   }, [formData.wedding_date, wedding?.weddingDate]);
 
   const handlePickAvatar = () => fileInputRef.current?.click();
+
+  const handleProfileSave = async () => {
+    if (!token) return;
+    setSaving(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: formData.name,
+          wedding_date: formData.wedding_date,
+          venue: formData.venue,
+          phone: formData.phone,
+          bio: formData.bio,
+          guest_count: Number(formData.guest_count)
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to save profile');
+      const payload = await res.json();
+      setProfile(payload.user);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleAvatarSelected = async (file: File | null) => {
     if (!file || !token) return;
@@ -167,10 +200,57 @@ export default function ProfilePage() {
                 />
               </div>
               <h2 className="mt-4 text-4xl font-bold tracking-tight">{formData.name || user?.name}</h2>
-              <p className="text-sm text-muted-foreground">Elite Member Since Jan 2024</p>
-              <Button className="mt-6 w-full">Edit Profile Info</Button>
+              <p className="text-sm text-muted-foreground">Click the camera icon to upload your profile photo.</p>
+              <Button onClick={handleProfileSave} disabled={saving} className="mt-6 w-full">
+                {saving ? 'Saving profile…' : 'Save profile info'}
+              </Button>
               <Button variant="outline" className="mt-3 w-full">View Public Bio</Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border-fuchsia-100">
+          <CardHeader>
+            <CardTitle>Profile & Wedding Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Your name"
+              />
+              <Input
+                type="date"
+                value={formData.wedding_date}
+                onChange={(e) => setFormData((prev) => ({ ...prev, wedding_date: e.target.value }))}
+              />
+              <Input
+                value={formData.venue}
+                onChange={(e) => setFormData((prev) => ({ ...prev, venue: e.target.value }))}
+                placeholder="Wedding venue"
+              />
+              <Input
+                value={formData.phone}
+                onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder="Phone number"
+              />
+              <Input
+                value={String(formData.guest_count)}
+                type="number"
+                min={0}
+                onChange={(e) => setFormData((prev) => ({ ...prev, guest_count: Number(e.target.value) }))}
+                placeholder="Guest count"
+              />
+              <Input
+                value={formData.bio}
+                onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))}
+                placeholder="Wedding bio"
+              />
+            </div>
+            <Button onClick={handleProfileSave} disabled={saving} className="w-full">
+              {saving ? 'Saving profile…' : 'Save profile details'}
+            </Button>
           </CardContent>
         </Card>
 
