@@ -2,12 +2,23 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
+interface UserProfile {
+  phone?: string;
+  avatar?: string;
+  bio?: string;
+  wedding_date?: string;
+  venue?: string;
+  guest_count?: number;
+}
+
 interface User {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   email: string;
   role: 'bride' | 'groom' | 'family' | 'vendor' | 'admin';
   isVerified?: boolean;
+  profile?: UserProfile;
 }
 
 interface AuthContextType {
@@ -39,6 +50,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem('token', token);
+    } else {
+      localStorage.removeItem('token');
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+  }, [user]);
 
   const getRedirectPath = (): string => {
     if (!user) return '/auth/login';

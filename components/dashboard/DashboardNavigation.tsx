@@ -41,8 +41,8 @@ export default function DashboardNavigation() {
           </button>
           <div className="flex items-center gap-2 rounded-full border border-fuchsia-100 bg-white px-2 py-1">
             <img
-              src="https://images.unsplash.com/photo-1546961329-78bef0414d7c?auto=format&fit=crop&w=100&q=80"
-              alt="User avatar"
+              src={user?.profile?.avatar || 'https://images.unsplash.com/photo-1546961329-78bef0414d7c?auto=format&fit=crop&w=100&q=80'}
+              alt={user?.name ? `${user.name} avatar` : 'User avatar'}
               className="h-8 w-8 rounded-full border border-fuchsia-200 object-cover"
             />
             <div className="text-xs">

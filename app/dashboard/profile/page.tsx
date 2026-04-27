@@ -34,7 +34,7 @@ type Wedding = {
 };
 
 export default function ProfilePage() {
-  const { user, token } = useAuth();
+  const { user, token, setUser } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -115,6 +115,7 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error('Failed to save profile');
       const payload = await res.json();
       setProfile(payload.user);
+      setUser?.(payload.user);
     } catch (error) {
       console.error(error);
     } finally {
@@ -141,6 +142,7 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error('Failed to upload avatar');
       const payload = await res.json();
       setProfile(payload.user);
+      setUser?.(payload.user);
     } finally {
       setSaving(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
