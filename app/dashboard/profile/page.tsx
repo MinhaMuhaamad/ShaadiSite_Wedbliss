@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,15 +26,26 @@ interface UserProfile {
   };
 }
 
+type Wedding = {
+  _id: string;
+  brideName?: string;
+  groomName?: string;
+  weddingDate?: string;
+};
+
 export default function ProfilePage() {
   const { user, token } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [wedding, setWedding] = useState<Wedding | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     wedding_date: '',
-    venue: ''
+    venue: '',
+    groomName: ''
   });
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -42,21 +53,81 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/users/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const [userRes, weddingRes] = await Promise.all([
+        fetch('http://localhost:5000/api/users/me', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('http://localhost:5000/api/weddings', { headers: { Authorization: `Bearer ${token}` } })
+      ]);
 
-      if (!response.ok) throw new Error('Failed to fetch profile');
+      if (!userRes.ok) throw new Error('Failed to fetch profile');
+      if (!weddingRes.ok) throw new Error('Failed to fetch wedding details');
 
-      const data = await response.json();
-      setProfile(data);
+      const userData = await userRes.json();
+      const weddings = (await weddingRes.json()) as Wedding[];
+      const activeWedding = weddings?.[0] || null;
+
+      setProfile(userData);
+      setWedding(activeWedding);
       setFormData({
-        name: data.name,
-        wedding_date: data.profile?.wedding_date || '',
-        venue: data.profile?.venue || ''
+        name: userData.name,
+        wedding_date: userData.profile?.wedding_date || (activeWedding?.weddingDate ? activeWedding.weddingDate.slice(0, 10) : ''),
+        venue: userData.profile?.venue || '',
+        groomName: activeWedding?.groomName || ''
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const daysLeft = useMemo(() => {
+    const dateStr = formData.wedding_date || (wedding?.weddingDate ? wedding.weddingDate.slice(0, 10) : '');
+    if (!dateStr) return null;
+    const target = new Date(dateStr).getTime();
+    if (Number.isNaN(target)) return null;
+    const diff = Math.max(0, target - Date.now());
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }, [formData.wedding_date, wedding?.weddingDate]);
+
+  const handlePickAvatar = () => fileInputRef.current?.click();
+
+  const handleAvatarSelected = async (file: File | null) => {
+    if (!file || !token) return;
+    setSaving(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('Failed to read image'));
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch('http://localhost:5000/api/users/avatar', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatarUrl: dataUrl })
+      });
+      if (!res.ok) throw new Error('Failed to upload avatar');
+      const payload = await res.json();
+      setProfile(payload.user);
+    } finally {
+      setSaving(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const saveGroomName = async () => {
+    if (!token || !wedding?._id) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/weddings/${wedding._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ groomName: formData.groomName })
+      });
+      if (!res.ok) throw new Error('Failed to update groom name');
+      const payload = await res.json();
+      setWedding(payload.wedding);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -79,9 +150,21 @@ export default function ProfilePage() {
                   alt="Profile avatar"
                   className="h-28 w-28 rounded-full border-4 border-fuchsia-300 object-cover"
                 />
-                <button className="absolute -bottom-1 -right-1 rounded-full bg-white p-2 shadow">
+                <button
+                  type="button"
+                  onClick={handlePickAvatar}
+                  disabled={saving}
+                  className="absolute -bottom-1 -right-1 rounded-full bg-white p-2 shadow disabled:opacity-60"
+                >
                   <Camera className="h-4 w-4 text-fuchsia-700" />
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleAvatarSelected(e.target.files?.[0] || null)}
+                />
               </div>
               <h2 className="mt-4 text-4xl font-bold tracking-tight">{formData.name || user?.name}</h2>
               <p className="text-sm text-muted-foreground">Elite Member Since Jan 2024</p>
@@ -100,20 +183,34 @@ export default function ProfilePage() {
                   <p className="mt-1 text-2xl font-bold">
                     {formData.wedding_date ? new Date(formData.wedding_date).toLocaleDateString() : 'Set Date'}
                   </p>
-                  <p className="mt-3 text-4xl font-bold text-fuchsia-700">142</p>
+                  <p className="mt-3 text-4xl font-bold text-fuchsia-700">{daysLeft ?? '—'}</p>
                   <p className="text-xs text-muted-foreground">Days Left</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Partner Details</p>
                   <div className="mt-2 flex items-center gap-3">
-                    <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=200&q=80" alt="Partner avatar" className="h-10 w-10 rounded-full object-cover" />
+                    <img
+                      src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=200&q=80"
+                      alt="Partner avatar"
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
                     <div>
-                      <p className="font-medium">Julian Thorne</p>
+                      <p className="font-medium">{formData.groomName || 'Add partner name'}</p>
                       <p className="text-xs text-muted-foreground">Groom</p>
                     </div>
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground">Contact: {profile?.email}</p>
                   <p className="text-sm text-muted-foreground">{formData.venue || 'Registry Pref: Bespoke Minimalist'}</p>
+                  <div className="mt-3 flex gap-2">
+                    <Input
+                      value={formData.groomName}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, groomName: e.target.value }))}
+                      placeholder="Groom's name"
+                    />
+                    <Button type="button" onClick={saveGroomName} disabled={saving || !wedding?._id || !formData.groomName.trim()}>
+                      {saving ? 'Saving…' : 'Save'}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>

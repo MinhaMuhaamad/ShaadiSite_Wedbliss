@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/lib/context/AuthContext';
 import { apiRequest, getActiveWeddingId } from '@/lib/dashboard-api';
+import { getSocket, joinWeddingRoom } from '@/lib/realtime';
 
 type Guest = {
   _id: string;
@@ -19,12 +20,16 @@ export default function RsvpTrackerPage() {
   const { token } = useAuth();
   const [guests, setGuests] = useState<Guest[]>([]);
   const [error, setError] = useState('');
+  const weddingIdRef = useRef<string | null>(null);
+  const loadRef = useRef<(() => Promise<void>) | null>(null);
 
   const load = async () => {
     if (!token) return;
     try {
       setError('');
       const weddingId = await getActiveWeddingId(token);
+      weddingIdRef.current = weddingId;
+      joinWeddingRoom(weddingId);
       if (!weddingId) return setGuests([]);
       const rows = await apiRequest<Guest[]>(`/api/guests/wedding/${weddingId}`, token);
       setGuests(rows);
@@ -34,9 +39,20 @@ export default function RsvpTrackerPage() {
   };
 
   useEffect(() => {
+    loadRef.current = load;
     load();
-    const poll = setInterval(load, 12000);
-    return () => clearInterval(poll);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = getSocket();
+    const handler = (payload: { weddingId?: string }) => {
+      if (!payload?.weddingId) return;
+      if (payload.weddingId !== weddingIdRef.current) return;
+      void loadRef.current?.();
+    };
+    socket.on('guests:updated', handler);
+    return () => socket.off('guests:updated', handler);
   }, [token]);
 
   const updateStatus = async (guestId: string, status: Guest['rsvpStatus']) => {

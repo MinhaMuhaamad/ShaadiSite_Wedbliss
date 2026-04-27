@@ -1,4 +1,5 @@
 const Timeline = require('../models/Timeline');
+const { getIo } = require('../socket');
 
 exports.getTimeline = async (req, res) => {
   try {
@@ -18,6 +19,14 @@ exports.createTimelineEvent = async (req, res) => {
     const event = new Timeline(req.body);
     await event.save();
     res.status(201).json({ message: 'Timeline event created', event });
+    const io = getIo();
+    if (io && event?.weddingId) {
+      io.to(`wedding:${String(event.weddingId)}`).emit('timeline:updated', {
+        weddingId: String(event.weddingId),
+        eventId: String(event._id),
+        action: 'create'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -34,6 +43,14 @@ exports.updateTimelineEvent = async (req, res) => {
       return res.status(404).json({ message: 'Timeline event not found' });
     }
     res.json({ message: 'Timeline event updated', event });
+    const io = getIo();
+    if (io && event?.weddingId) {
+      io.to(`wedding:${String(event.weddingId)}`).emit('timeline:updated', {
+        weddingId: String(event.weddingId),
+        eventId: String(event._id),
+        action: 'update'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -46,6 +63,14 @@ exports.deleteTimelineEvent = async (req, res) => {
       return res.status(404).json({ message: 'Timeline event not found' });
     }
     res.json({ message: 'Timeline event deleted' });
+    const io = getIo();
+    if (io && event?.weddingId) {
+      io.to(`wedding:${String(event.weddingId)}`).emit('timeline:updated', {
+        weddingId: String(event.weddingId),
+        eventId: String(event._id),
+        action: 'delete'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

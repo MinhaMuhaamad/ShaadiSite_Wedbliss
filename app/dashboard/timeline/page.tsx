@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Clock, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { apiRequest, getActiveWeddingId } from '@/lib/dashboard-api';
+import { getSocket, joinWeddingRoom } from '@/lib/realtime';
 
 type TimelineEvent = {
   _id: string;
@@ -46,6 +47,7 @@ export default function TimelinePage() {
         setError('');
         const id = await getActiveWeddingId(token);
         setWeddingId(id);
+        joinWeddingRoom(id);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load wedding.');
       }
@@ -70,9 +72,19 @@ export default function TimelinePage() {
     if (!weddingId) return;
     setLoading(true);
     void loadTimeline(weddingId);
-    const poll = setInterval(() => void loadTimeline(weddingId), 12000);
-    return () => clearInterval(poll);
   }, [weddingId, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = getSocket();
+    const handler = (payload: { weddingId?: string }) => {
+      if (!payload?.weddingId) return;
+      if (payload.weddingId !== weddingId) return;
+      void loadTimeline(weddingId);
+    };
+    socket.on('timeline:updated', handler);
+    return () => socket.off('timeline:updated', handler);
+  }, [token, weddingId]);
 
   const handleAddEvent = async () => {
     if (!token) return setError('Please login to continue.');

@@ -1,5 +1,6 @@
 const Guest = require('../models/Guest');
 const Wedding = require('../models/Wedding');
+const { getIo } = require('../socket');
 
 // Add guest
 exports.addGuest = async (req, res) => {
@@ -26,6 +27,14 @@ exports.addGuest = async (req, res) => {
     );
 
     res.status(201).json({ message: 'Guest added', guest });
+    const io = getIo();
+    if (io && guest?.weddingId) {
+      io.to(`wedding:${String(guest.weddingId)}`).emit('guests:updated', {
+        weddingId: String(guest.weddingId),
+        guestId: String(guest._id),
+        action: 'add'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -51,6 +60,14 @@ exports.updateGuest = async (req, res) => {
     );
 
     res.json({ message: 'Guest updated', guest });
+    const io = getIo();
+    if (io && guest?.weddingId) {
+      io.to(`wedding:${String(guest.weddingId)}`).emit('guests:updated', {
+        weddingId: String(guest.weddingId),
+        guestId: String(guest._id),
+        action: 'update'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -75,6 +92,14 @@ exports.updateRSVP = async (req, res) => {
     );
 
     res.json({ message: 'RSVP updated', guest });
+    const io = getIo();
+    if (io && guest?.weddingId) {
+      io.to(`wedding:${String(guest.weddingId)}`).emit('guests:updated', {
+        weddingId: String(guest.weddingId),
+        guestId: String(guest._id),
+        action: 'rsvp'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -92,6 +117,14 @@ exports.deleteGuest = async (req, res) => {
     );
 
     res.json({ message: 'Guest deleted' });
+    const io = getIo();
+    if (io && guest?.weddingId) {
+      io.to(`wedding:${String(guest.weddingId)}`).emit('guests:updated', {
+        weddingId: String(guest.weddingId),
+        guestId: String(guest._id),
+        action: 'delete'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

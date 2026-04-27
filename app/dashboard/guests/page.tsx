@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/context/AuthContext';
 import { apiRequest, getActiveWeddingId } from '@/lib/dashboard-api';
+import { getSocket, joinWeddingRoom } from '@/lib/realtime';
 
 type Guest = {
   _id: string;
@@ -26,12 +27,16 @@ export default function GuestsPage() {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
   const [error, setError] = useState('');
+  const weddingIdRef = useRef<string | null>(null);
+  const loadGuestsRef = useRef<(() => Promise<void>) | null>(null);
 
   const loadGuests = async () => {
     if (!token) return;
     try {
       setError('');
       const weddingId = await getActiveWeddingId(token);
+      weddingIdRef.current = weddingId;
+      joinWeddingRoom(weddingId);
       if (!weddingId) return setGuests([]);
       const result = await apiRequest<Guest[]>(`/api/guests/wedding/${weddingId}`, token);
       setGuests(result);
@@ -41,9 +46,22 @@ export default function GuestsPage() {
   };
 
   useEffect(() => {
+    loadGuestsRef.current = loadGuests;
     loadGuests();
-    const poll = setInterval(loadGuests, 15000);
-    return () => clearInterval(poll);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = getSocket();
+    const handler = (payload: { weddingId?: string }) => {
+      if (!payload?.weddingId) return;
+      if (payload.weddingId !== weddingIdRef.current) return;
+      void loadGuestsRef.current?.();
+    };
+    socket.on('guests:updated', handler);
+    return () => {
+      socket.off('guests:updated', handler);
+    };
   }, [token]);
 
   const filtered = useMemo(() => {

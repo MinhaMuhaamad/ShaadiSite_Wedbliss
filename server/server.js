@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const { setIo } = require('./socket');
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST']
   }
 });
+setIo(io);
 
 // Middleware
 app.use(cors());
@@ -78,6 +80,12 @@ io.on('connection', (socket) => {
 
   socket.on('send-message', (roomId, message) => {
     io.to(roomId).emit('receive-message', message);
+  });
+
+  // Wedding-scoped realtime updates (budget, guests, timeline, etc.)
+  socket.on('join-wedding', (weddingId) => {
+    if (!weddingId) return;
+    socket.join(`wedding:${weddingId}`);
   });
 
   socket.on('disconnect', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/lib/context/AuthContext';
 import { apiRequest, formatCurrency } from '@/lib/dashboard-api';
+import { getSocket, joinWeddingRoom } from '@/lib/realtime';
 
 type Wedding = { _id: string };
 type Budget = {
@@ -34,6 +35,8 @@ type FlatExpense = {
 export default function ExpenseHistoryPage() {
   const { token } = useAuth();
   const [budget, setBudget] = useState<Budget | null>(null);
+  const weddingIdRef = useRef<string | null>(null);
+  const loadRef = useRef<(() => Promise<void>) | null>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
@@ -48,8 +51,11 @@ export default function ExpenseHistoryPage() {
       const weddings = await apiRequest<Wedding[]>('/api/weddings', token);
       if (!weddings.length) {
         setBudget(null);
+        weddingIdRef.current = null;
         return;
       }
+      weddingIdRef.current = weddings[0]._id;
+      joinWeddingRoom(weddings[0]._id);
       const budgetData = await apiRequest<Budget>(`/api/budget/wedding/${weddings[0]._id}`, token);
       setBudget(budgetData);
     } catch (err) {
@@ -58,9 +64,20 @@ export default function ExpenseHistoryPage() {
   };
 
   useEffect(() => {
+    loadRef.current = loadExpenses;
     loadExpenses();
-    const poll = setInterval(loadExpenses, 12000);
-    return () => clearInterval(poll);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = getSocket();
+    const handler = (payload: { weddingId?: string }) => {
+      if (!payload?.weddingId) return;
+      if (payload.weddingId !== weddingIdRef.current) return;
+      void loadRef.current?.();
+    };
+    socket.on('budget:updated', handler);
+    return () => socket.off('budget:updated', handler);
   }, [token]);
 
   const flattened = useMemo<FlatExpense[]>(() => {

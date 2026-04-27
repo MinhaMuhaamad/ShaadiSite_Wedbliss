@@ -179,7 +179,6 @@ exports.resetPassword = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: 'Reset link is invalid or expired.' });
     }
-
     user.password = password;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;

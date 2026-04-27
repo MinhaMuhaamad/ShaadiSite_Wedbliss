@@ -10,7 +10,7 @@ const registerValidation = [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Invalid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('role').isIn(['bride', 'family', 'vendor', 'admin']).withMessage('Invalid role')
+  body('role').isIn(['bride', 'groom', 'family', 'vendor', 'admin']).withMessage('Invalid role')
 ];
 
 const loginValidation = [

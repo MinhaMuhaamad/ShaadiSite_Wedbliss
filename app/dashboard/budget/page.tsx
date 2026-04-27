@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/context/AuthContext';
 import { apiRequest, formatCurrency } from '@/lib/dashboard-api';
+import { getSocket, joinWeddingRoom } from '@/lib/realtime';
 
 type Wedding = { _id: string };
 type Budget = {
@@ -22,6 +23,8 @@ export default function BudgetPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [budget, setBudget] = useState<Budget | null>(null);
+  const weddingIdRef = useRef<string | null>(null);
+  const loadBudgetRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -31,9 +34,11 @@ export default function BudgetPage() {
         const weddings = await apiRequest<Wedding[]>('/api/weddings', token);
         if (!weddings.length) {
           setBudget(null);
+          weddingIdRef.current = null;
           setLoading(false);
           return;
         }
+        weddingIdRef.current = weddings[0]._id;
         const budgetData = await apiRequest<Budget>(`/api/budget/wedding/${weddings[0]._id}`, token);
         setBudget(budgetData);
       } catch (err) {
@@ -42,9 +47,28 @@ export default function BudgetPage() {
         setLoading(false);
       }
     };
+    loadBudgetRef.current = loadBudget;
     loadBudget();
-    const poll = setInterval(loadBudget, 15000);
-    return () => clearInterval(poll);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = getSocket();
+
+    const handler = (payload: { weddingId?: string }) => {
+      if (!payload?.weddingId) return;
+      if (payload.weddingId !== weddingIdRef.current) return;
+      void loadBudgetRef.current?.();
+    };
+
+    socket.on('budget:updated', handler);
+    return () => {
+      socket.off('budget:updated', handler);
+    };
+  }, [token]);
+
+  useEffect(() => {
+    joinWeddingRoom(weddingIdRef.current);
   }, [token]);
 
   const spentPercentage = useMemo(() => {

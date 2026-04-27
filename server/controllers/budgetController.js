@@ -1,4 +1,5 @@
 const Budget = require('../models/Budget');
+const { getIo } = require('../socket');
 
 // Get wedding budget
 exports.getBudget = async (req, res) => {
@@ -28,6 +29,14 @@ exports.updateBudget = async (req, res) => {
     );
 
     res.json({ message: 'Budget updated', budget });
+    const io = getIo();
+    if (io && budget?.weddingId) {
+      io.to(`wedding:${String(budget.weddingId)}`).emit('budget:updated', {
+        weddingId: String(budget.weddingId),
+        budgetId: String(budget._id),
+        action: 'updateBudget'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -53,6 +62,14 @@ exports.addBudgetItem = async (req, res) => {
     await budget.save();
 
     res.json({ message: 'Budget item added', budget });
+    const io = getIo();
+    if (io && budget?.weddingId) {
+      io.to(`wedding:${String(budget.weddingId)}`).emit('budget:updated', {
+        weddingId: String(budget.weddingId),
+        budgetId: String(budget._id),
+        action: 'addItem'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -75,6 +92,14 @@ exports.updateBudgetItem = async (req, res) => {
     await budget.save();
 
     res.json({ message: 'Budget item updated', budget });
+    const io = getIo();
+    if (io && budget?.weddingId) {
+      io.to(`wedding:${String(budget.weddingId)}`).emit('budget:updated', {
+        weddingId: String(budget.weddingId),
+        budgetId: String(budget._id),
+        action: 'updateItem'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -99,6 +124,14 @@ exports.deleteBudgetItem = async (req, res) => {
 
     await budget.save();
     res.json({ message: 'Budget item deleted', budget });
+    const io = getIo();
+    if (io && budget?.weddingId) {
+      io.to(`wedding:${String(budget.weddingId)}`).emit('budget:updated', {
+        weddingId: String(budget.weddingId),
+        budgetId: String(budget._id),
+        action: 'deleteItem'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

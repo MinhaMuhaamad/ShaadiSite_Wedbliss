@@ -1,20 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 export default function BrideProfilePage() {
+  const { token } = useAuth();
   const [form, setForm] = useState({
     avatar: '',
     weddingDate: '2026-10-24',
-    partnerName: 'Julian Thorne',
+    partnerName: '',
     city: 'Lahore',
     theme: 'Bespoke Minimalist',
     bio: 'Dreaming of a pastel garden celebration.',
     notifications: true
   });
+
+  useEffect(() => {
+    const load = async () => {
+      if (!token) return;
+      try {
+        const [meRes, weddingsRes] = await Promise.all([
+          fetch('http://localhost:5000/api/users/me', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('http://localhost:5000/api/weddings', { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        if (!meRes.ok || !weddingsRes.ok) return;
+        const me = await meRes.json();
+        const weddings = await weddingsRes.json();
+        const wedding = weddings?.[0];
+        setForm((prev) => ({
+          ...prev,
+          avatar: me?.profile?.avatar || '',
+          weddingDate: (me?.profile?.wedding_date || wedding?.weddingDate || prev.weddingDate).slice(0, 10),
+          partnerName: wedding?.groomName || prev.partnerName,
+          theme: wedding?.theme || prev.theme
+        }));
+      } catch {
+        // ignore demo page load failures
+      }
+    };
+    load();
+  }, [token]);
 
   return (
     <div className="space-y-6">

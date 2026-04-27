@@ -150,7 +150,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           weddingDate: quickWeddingDate,
           brideName: user?.name || 'Bride',
-          groomName: 'Partner'
+          groomName: ''
         })
       });
       await loadDashboard();
